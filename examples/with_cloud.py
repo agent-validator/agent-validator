@@ -24,7 +24,7 @@ def main():
     config = Config(
         log_to_cloud=True,
         api_key=os.getenv("AGENT_VALIDATOR_API_KEY"),
-        cloud_endpoint=os.getenv("AGENT_VALIDATOR_ENDPOINT", "https://api.agentvalidator.com")
+        cloud_endpoint=os.getenv("AGENT_VALIDATOR_ENDPOINT", "https://api.agentvalidator.dev")
     )
     
     # Define schema with nested structure

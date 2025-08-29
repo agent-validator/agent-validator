@@ -215,7 +215,7 @@ from agent_validator import Config
 config = Config(
     log_to_cloud=True,
     api_key="your-api-key",
-    cloud_endpoint="https://api.agentvalidator.com"
+    cloud_endpoint="https://api.agentvalidator.dev"
 )
 
 result = validate(
@@ -235,7 +235,7 @@ result = validate(
 ```bash
 export AGENT_VALIDATOR_API_KEY="your-api-key"
 export AGENT_VALIDATOR_LOG_TO_CLOUD="1"
-export AGENT_VALIDATOR_ENDPOINT="https://api.agentvalidator.com"
+export AGENT_VALIDATOR_ENDPOINT="https://api.agentvalidator.dev"
 export AGENT_VALIDATOR_MAX_OUTPUT_BYTES="131072"
 export AGENT_VALIDATOR_MAX_STR_LEN="8192"
 export AGENT_VALIDATOR_MAX_LIST_LEN="2048"
@@ -254,7 +254,7 @@ max_str_len = 8192
 max_list_len = 2048
 max_dict_keys = 512
 log_to_cloud = false
-cloud_endpoint = "https://api.agentvalidator.com"
+cloud_endpoint = "https://api.agentvalidator.dev"
 timeout_s = 20
 retries = 2
 api_key = "your-api-key"
