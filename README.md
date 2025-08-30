@@ -49,12 +49,13 @@ try:
         retry_fn=call_agent,  # Function to retry if validation fails
         retries=2,
         mode=ValidationMode.COERCE,  # Allow type coercion
-        context={"task_id": "abc123"}
+        context={"correlation_id": "abc123"}  # Optional correlation ID for tracking
     )
     print("✅ Validation successful!")
     print(result)
 except ValidationError as e:
     print(f"❌ Validation failed: {e}")
+    print(f"Correlation ID: {e.correlation_id}")  # For debugging
 ```
 
 ### 🖥️ CLI Usage
@@ -241,10 +242,30 @@ All validation attempts are logged to `~/.agent_validator/logs/YYYY-MM-DD.jsonl`
     "max_list_len": 2048,
     "max_dict_keys": 512
   },
-  "context": { "task_id": "abc123" },
+  "context": { "correlation_id": "abc123" },
   "output_sample": "{\"name\": \"John\", \"age\": 30}"
 }
 ```
+
+**Correlation IDs** are automatically generated for each validation attempt and help you:
+
+- 🔍 **Track specific validations** across logs and error messages
+- 🐛 **Debug issues** by correlating errors with specific validation attempts
+- 📊 **Monitor performance** by tracking validation duration and retry attempts
+- 🔗 **Link related operations** when using retry functions
+
+When viewing logs with `agent-validator logs`, logs are displayed in a clear table format:
+
+```bash
+┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┐
+│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │
+├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┤
+│ 2025-08-30 18:40:00                 │      ✗ │        none │  strict │        1 │         0ms │
+│ 2025-08-30 18:40:00                 │      ✓ │        none │  coerce │        1 │         0ms │
+└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┘
+```
+
+Correlation IDs are truncated for readability and show `[none]` when not set.
 
 ### ☁️ Cloud Logging
 

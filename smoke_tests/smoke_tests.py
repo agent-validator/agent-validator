@@ -243,6 +243,7 @@ class AgentValidatorSmokeTester:
             str(self.test_schema_file), 
             str(self.test_input_file),
             "--mode", "cOeRce" # Case-insensitive mode
+            
         ])
         
         if not self._string_in_output(output, "Validation successful"):
@@ -280,7 +281,8 @@ class AgentValidatorSmokeTester:
         output = self._run_cli_command(["logs", "-n", "5"])
         
         # Should either show logs or "No logs found"
-        if not self._string_in_output(output, "No logs found") and not self._string_in_output(output, "correlation_id"):
+        # Logs output now uses table format with headers
+        if not self._string_in_output(output, "No logs found") and not self._string_in_output(output, "Timestamp") and not self._string_in_output(output, "Status"):
             raise SmokeTestError("Logs command output unexpected")
         
         print("✅ CLI logs working")

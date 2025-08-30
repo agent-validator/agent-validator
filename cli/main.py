@@ -80,18 +80,43 @@ def logs(
         typer.echo("No logs found.")
         return
     
+    # Print table header
+    typer.echo("┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┐")
+    typer.echo("│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │")
+    typer.echo("├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┤")
+    
     for entry in entries:
         ts = entry.get("ts", "unknown")
-        correlation_id = entry.get("correlation_id", "unknown")
+        correlation_id = entry.get("correlation_id")
         valid = "✓" if entry.get("valid") else "✗"
         mode = entry.get("mode", "unknown")
         attempts = entry.get("attempts", 0)
         duration_ms = entry.get("duration_ms", 0)
         
-        typer.echo(
-            f"{ts} {valid} {correlation_id} {mode} "
-            f"(attempts: {attempts}, duration: {duration_ms}ms)"
-        )
+        # Format correlation ID - show "none" if missing, truncate if too long
+        if correlation_id:
+            # Truncate long correlation IDs for readability
+            display_id = correlation_id[:8] + "..." if len(correlation_id) > 12 else correlation_id
+        else:
+            display_id = "none"
+        
+        # Format timestamp for better readability
+        if ts != "unknown":
+            try:
+                # Parse ISO timestamp and format it nicely
+                from datetime import datetime
+                dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+                formatted_ts = dt.strftime("%Y-%m-%d %H:%M:%S")
+            except:
+                formatted_ts = ts
+        else:
+            formatted_ts = ts
+        
+        # Print table row
+        typer.echo(f"│ {formatted_ts:<35} │ {valid:>6} │ {display_id:>11} │ {mode:>7} │ {attempts:>8} │ {duration_ms:>9}ms │")
+    
+    # Print table footer
+    typer.echo("└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┘")
 
 
 @app.command()
@@ -220,18 +245,43 @@ def cloud_logs(
             typer.echo("No logs found in cloud service.")
             return
         
+        # Print table header
+        typer.echo("┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┐")
+        typer.echo("│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │")
+        typer.echo("├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┤")
+        
         for log in logs:
             ts = log.get("ts", "unknown")
-            correlation_id = log.get("correlation_id", "unknown")
+            correlation_id = log.get("correlation_id")
             valid = "✓" if log.get("valid") else "✗"
             mode = log.get("mode", "unknown")
             attempts = log.get("attempts", 0)
             duration_ms = log.get("duration_ms", 0)
             
-            typer.echo(
-                f"{ts} {valid} {correlation_id} {mode} "
-                f"(attempts: {attempts}, duration: {duration_ms}ms)"
-            )
+            # Format correlation ID - show "none" if missing, truncate if too long
+            if correlation_id and correlation_id != "unknown":
+                # Truncate long correlation IDs for readability
+                display_id = correlation_id[:8] + "..." if len(correlation_id) > 12 else correlation_id
+            else:
+                display_id = "none"
+            
+            # Format timestamp for better readability
+            if ts != "unknown":
+                try:
+                    # Parse ISO timestamp and format it nicely
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+                    formatted_ts = dt.strftime("%Y-%m-%d %H:%M:%S")
+                except:
+                    formatted_ts = ts
+            else:
+                formatted_ts = ts
+            
+            # Print table row
+            typer.echo(f"│ {formatted_ts:<35} │ {valid:>6} │ {display_id:>11} │ {mode:>7} │ {attempts:>8} │ {duration_ms:>9}ms │")
+        
+        # Print table footer
+        typer.echo("└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┘")
             
     except requests.exceptions.ConnectionError:
         typer.echo(f"❌ Cannot connect to {config.cloud_endpoint}. Is the server running?")
