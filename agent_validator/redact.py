@@ -1,8 +1,7 @@
 """Redaction utilities for sensitive data."""
 
 import re
-from typing import Any, Dict, List, Optional, Union
-
+from typing import Any, Dict, Optional
 
 # Default redaction patterns
 DEFAULT_PATTERNS = {
@@ -24,7 +23,7 @@ DEFAULT_PATTERNS = {
 
 class Redactor:
     """Redactor for sensitive data patterns."""
-    
+
     def __init__(self, patterns: Optional[Dict[str, str]] = None):
         """
         Initialize redactor with patterns.
@@ -38,12 +37,12 @@ class Redactor:
             self.patterns.update(patterns)
         else:
             self.patterns = DEFAULT_PATTERNS.copy()
-        
+
         self.compiled_patterns = {
             name: re.compile(pattern, re.IGNORECASE | re.MULTILINE)
             for name, pattern in self.patterns.items()
         }
-    
+
     def redact_text(self, text: str) -> str:
         """
         Redact sensitive data from text.
@@ -56,31 +55,31 @@ class Redactor:
         """
         if not isinstance(text, str):
             return text
-        
+
         redacted = text
-        
+
         # Process patterns in a specific order to avoid conflicts
         # Start with specific patterns first
         if "email" in self.compiled_patterns:
             redacted = self.compiled_patterns["email"].sub(lambda m: self._redact_email(m.group(0)), redacted)
-        
+
         if "phone_value" in self.compiled_patterns:
             redacted = self.compiled_patterns["phone_value"].sub(lambda m: self._redact_phone(m.group(0)), redacted)
-        
+
         if "ssn" in self.compiled_patterns:
             redacted = self.compiled_patterns["ssn"].sub(lambda m: self._redact_ssn(m.group(0)), redacted)
-        
+
         if "credit_card" in self.compiled_patterns:
             redacted = self.compiled_patterns["credit_card"].sub(lambda m: self._redact_credit_card(m.group(0)), redacted)
-        
+
         # Then process general patterns
         for pattern_name, pattern in self.compiled_patterns.items():
             if pattern_name in ["license_key", "license_key_value", "api_key", "jwt", "jwt_value", "password", "password_value", "secret", "phone"] or pattern_name.startswith("custom_"):
                 # Replace the entire match
                 redacted = pattern.sub("[REDACTED]", redacted)
-        
+
         return redacted
-    
+
     def redact_dict(self, data: Any, max_depth: int = 10) -> Any:
         """
         Recursively redact sensitive data from dictionary or other data structures.
@@ -94,7 +93,7 @@ class Redactor:
         """
         if max_depth <= 0:
             return "[REDACTED - MAX DEPTH]"
-        
+
         if isinstance(data, dict):
             result = {}
             for key, value in data.items():
@@ -116,41 +115,41 @@ class Redactor:
             return self.redact_text(data)
         else:
             return data
-    
+
     def _redact_email(self, email: str) -> str:
         """Redact email address."""
         if "@" not in email:
             return "[REDACTED]"
-        
+
         username, domain = email.split("@", 1)
         if len(username) <= 2:
             redacted_username = "*" * len(username)
         else:
             redacted_username = username[0] + "***" + username[-1]
-        
+
         return f"{redacted_username}@{domain}"
-    
+
     def _redact_phone(self, phone: str) -> str:
         """Redact phone number."""
         digits = re.sub(r"\D", "", phone)
         if len(digits) < 4:
             return "[REDACTED]"
-        
+
         return f"***-***-{digits[-4:]}"
-    
+
     def _redact_ssn(self, ssn: str) -> str:
         """Redact social security number."""
         digits = re.sub(r"\D", "", ssn)
         if len(digits) < 4:
             return "[REDACTED]"
         return "***-**-" + digits[-4:]
-    
+
     def _redact_credit_card(self, card: str) -> str:
         """Redact credit card number."""
         digits = re.sub(r"\D", "", card)
         if len(digits) < 4:
             return "[REDACTED]"
-        
+
         return "*" * 12 + digits[-4:]
 
 
@@ -174,7 +173,7 @@ def redact_sensitive_data(data: Any, patterns: Optional[Dict[str, str]] = None, 
         redactor = Redactor(patterns)
     else:
         redactor = _default_redactor
-    
+
     return redactor.redact_dict(data, max_depth)
 
 

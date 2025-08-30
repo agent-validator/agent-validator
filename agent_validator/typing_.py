@@ -1,8 +1,8 @@
 """Type definitions and enums for agent_validator."""
 
-from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Callable, Dict, Optional, Union
 
 
 class ValidationMode(Enum):

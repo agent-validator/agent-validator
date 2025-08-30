@@ -3,6 +3,7 @@
 import random
 import time
 from typing import Any, Callable, Optional
+
 from .typing_ import RetryFunction
 
 
@@ -33,33 +34,33 @@ def retry_with_backoff(
     """
     start_time = time.time()
     last_exception = None
-    
+
     for attempt in range(max_retries + 1):
         try:
             # Check timeout
             if timeout_s and (time.time() - start_time) > timeout_s:
                 raise TimeoutError(f"Operation timed out after {timeout_s}s")
-            
+
             return func()
-            
+
         except Exception as e:
             last_exception = e
-            
+
             # Don't retry on the last attempt
             if attempt == max_retries:
                 break
-            
+
             # Calculate delay with exponential backoff and jitter
             delay = min(base_delay * (factor ** attempt), max_delay)
             jitter = random.uniform(0, delay * 0.1)  # 10% jitter
             total_delay = delay + jitter
-            
+
             # Check if we would exceed timeout
             if timeout_s and (time.time() - start_time + total_delay) > timeout_s:
                 break
-            
+
             time.sleep(total_delay)
-    
+
     raise last_exception
 
 
@@ -88,7 +89,7 @@ def create_retry_function(
     def retry_wrapper(prompt: str, context: dict) -> Any:
         def attempt():
             return original_fn(prompt, context)
-        
+
         return retry_with_backoff(
             attempt,
             max_retries=max_retries,
@@ -97,5 +98,5 @@ def create_retry_function(
             factor=factor,
             timeout_s=timeout_s,
         )
-    
+
     return retry_wrapper

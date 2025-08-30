@@ -1,29 +1,29 @@
 """Property-based fuzzing tests for JSON shapes."""
 
-import json
 import random
-from typing import Any, Dict, List, Union
+from typing import Any, Dict
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
-from agent_validator import validate, Schema, ValidationMode, ValidationError
+from agent_validator import Schema, ValidationError, ValidationMode, validate
 
 
 def generate_random_schema(depth: int = 0, max_depth: int = 3) -> Dict[str, Any]:
     """Generate a random schema for testing."""
     if depth >= max_depth:
         return {"value": random.choice([str, int, float, bool])}
-    
+
     schema = {}
     num_fields = random.randint(1, 5)
-    
+
     for i in range(num_fields):
         field_name = f"field_{i}"
         field_type = random.choice([
             str, int, float, bool, list, dict, None  # None for optional
         ])
-        
+
         if field_type is list:
             # List with random element type
             element_type = random.choice([str, int, float, bool, dict])
@@ -35,7 +35,7 @@ def generate_random_schema(depth: int = 0, max_depth: int = 3) -> Dict[str, Any]
             schema[field_name] = generate_random_schema(depth + 1, max_depth)
         else:
             schema[field_name] = field_type
-    
+
     return schema
 
 
@@ -43,9 +43,9 @@ def generate_data_for_schema(schema: Dict[str, Any], depth: int = 0, max_depth: 
     """Generate data that matches a schema."""
     if depth >= max_depth:
         return {"value": "test"}
-    
+
     data = {}
-    
+
     for field_name, field_type in schema.items():
         if field_type is None:
             # Optional field - randomly include or exclude
@@ -81,7 +81,7 @@ def generate_data_for_schema(schema: Dict[str, Any], depth: int = 0, max_depth: 
         elif isinstance(field_type, dict):
             # Nested object
             data[field_name] = generate_data_for_schema(field_type, depth + 1, max_depth)
-    
+
     return data
 
 
@@ -89,9 +89,9 @@ def generate_invalid_data_for_schema(schema: Dict[str, Any], depth: int = 0, max
     """Generate data that doesn't match a schema."""
     if depth >= max_depth:
         return {"value": 123}  # Wrong type
-    
+
     data = {}
-    
+
     for field_name, field_type in schema.items():
         if field_type is None:
             # Optional field - include with wrong type
@@ -123,7 +123,7 @@ def generate_invalid_data_for_schema(schema: Dict[str, Any], depth: int = 0, max
         elif isinstance(field_type, dict):
             # Nested object - give wrong type
             data[field_name] = "not_an_object"
-    
+
     return data
 
 
@@ -132,10 +132,10 @@ def test_schema_validation_accepts_valid_data(max_depth):
     """Test that schemas accept valid data."""
     schema_dict = generate_random_schema(max_depth=max_depth)
     schema = Schema(schema_dict)
-    
+
     # Generate valid data
     valid_data = generate_data_for_schema(schema_dict, max_depth=max_depth)
-    
+
     # Should validate successfully
     result = validate(valid_data, schema, mode=ValidationMode.STRICT)
     assert result == valid_data
@@ -146,10 +146,10 @@ def test_schema_validation_rejects_invalid_data(max_depth):
     """Test that schemas reject invalid data."""
     schema_dict = generate_random_schema(max_depth=max_depth)
     schema = Schema(schema_dict)
-    
+
     # Generate invalid data
     invalid_data = generate_invalid_data_for_schema(schema_dict, max_depth=max_depth)
-    
+
     # Should fail validation
     with pytest.raises(ValidationError):
         validate(invalid_data, schema, mode=ValidationMode.STRICT)
@@ -160,7 +160,7 @@ def test_coercion_mode_accepts_coercible_data(max_depth):
     """Test that coercion mode accepts data that can be coerced."""
     schema_dict = generate_random_schema(max_depth=max_depth)
     schema = Schema(schema_dict)
-    
+
     # Generate data with string numbers/booleans that can be coerced
     coercible_data = {}
     for field_name, field_type in schema_dict.items():
@@ -180,10 +180,10 @@ def test_coercion_mode_accepts_coercible_data(max_depth):
                 coercible_data[field_name] = [f"item_{i}" for i in range(3)]
         elif isinstance(field_type, dict):
             coercible_data[field_name] = generate_data_for_schema(field_type, max_depth=max_depth)
-    
+
     # Should validate successfully with coercion
     result = validate(coercible_data, schema, mode=ValidationMode.COERCE)
-    
+
     # Check that types were coerced correctly
     for field_name, field_type in schema_dict.items():
         if field_type is int:
@@ -198,13 +198,13 @@ def test_schema_serialization():
     """Test that schemas can be serialized and deserialized."""
     schema_dict = generate_random_schema(max_depth=2)
     original_schema = Schema(schema_dict)
-    
+
     # Serialize to dict
     serialized = original_schema.to_dict()
-    
+
     # Deserialize
     deserialized_schema = Schema.from_dict(serialized)
-    
+
     # Should be equivalent
     assert deserialized_schema.schema_dict == original_schema.schema_dict
 
@@ -213,13 +213,13 @@ def test_schema_json_serialization():
     """Test that schemas can be serialized to JSON and back."""
     schema_dict = generate_random_schema(max_depth=2)
     original_schema = Schema(schema_dict)
-    
+
     # Serialize to JSON
     json_str = original_schema.to_json()
-    
+
     # Deserialize
     deserialized_schema = Schema.from_json(json_str)
-    
+
     # Should be equivalent
     assert deserialized_schema.schema_dict == original_schema.schema_dict
 
@@ -228,10 +228,10 @@ def test_size_limits_enforced():
     """Test that size limits are enforced."""
     # Create a schema with a string field
     schema = Schema({"data": str})
-    
+
     # Create data that exceeds the default string length limit (8192)
     oversized_data = {"data": "x" * 10000}
-    
+
     # Should fail validation
     with pytest.raises(ValidationError, match="size_limit"):
         validate(oversized_data, schema)
@@ -245,7 +245,7 @@ def test_nested_list_validation():
             "scores": [int]
         }]
     })
-    
+
     valid_data = {
         "users": [
             {
@@ -258,7 +258,7 @@ def test_nested_list_validation():
             }
         ]
     }
-    
+
     result = validate(valid_data, schema)
     assert result == valid_data
 
@@ -270,12 +270,12 @@ def test_optional_fields_handling():
         "age": None,  # Optional
         "email": str
     })
-    
+
     # With optional field
     data1 = {"name": "John", "age": 30, "email": "john@example.com"}
     result1 = validate(data1, schema)
     assert result1 == data1
-    
+
     # Without optional field
     data2 = {"name": "John", "email": "john@example.com"}
     result2 = validate(data2, schema)
