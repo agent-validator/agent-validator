@@ -17,7 +17,7 @@ def retry_with_backoff(
 ) -> Any:
     """
     Retry a function with exponential backoff and jitter.
-    
+
     Args:
         func: Function to retry
         max_retries: Maximum number of retry attempts
@@ -25,10 +25,10 @@ def retry_with_backoff(
         max_delay: Maximum delay in seconds
         factor: Exponential factor
         timeout_s: Total timeout in seconds (None for no timeout)
-        
+
     Returns:
         Result of the function call
-        
+
     Raises:
         Exception: Last exception raised by the function
     """
@@ -74,7 +74,7 @@ def create_retry_function(
 ) -> RetryFunction:
     """
     Create a retry function that wraps the original function.
-    
+
     Args:
         original_fn: Original function to wrap
         max_retries: Maximum number of retry attempts
@@ -82,7 +82,7 @@ def create_retry_function(
         max_delay: Maximum delay in seconds
         factor: Exponential factor
         timeout_s: Total timeout in seconds
-        
+
     Returns:
         Wrapped function with retry logic
     """

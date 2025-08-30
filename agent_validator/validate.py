@@ -2,7 +2,7 @@
 
 import json
 import time
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 from .errors import ValidationError
 from .logging_ import log_validation_result
@@ -11,19 +11,19 @@ from .typing_ import Config, RetryFunction, ValidationMode
 
 
 def validate(
-    agent_output: Union[str, Dict[str, Any]],
+    agent_output: Union[str, dict[str, Any]],
     schema: Schema,
     retry_fn: Optional[RetryFunction] = None,
     retries: int = 2,
     mode: ValidationMode = ValidationMode.STRICT,
     timeout_s: int = 20,
     log_to_cloud: bool = False,
-    context: Optional[Dict[str, Any]] = None,
+    context: Optional[dict[str, Any]] = None,
     config: Optional[Config] = None,
 ) -> Any:
     """
     Validate agent output against a schema with optional retries.
-    
+
     Args:
         agent_output: The output to validate (string or dict)
         schema: Schema to validate against
@@ -34,10 +34,10 @@ def validate(
         log_to_cloud: Whether to log to cloud service
         context: Additional context for logging
         config: Configuration object
-        
+
     Returns:
         Validated and coerced output
-        
+
     Raises:
         ValidationError: If validation fails after all retries
         SchemaError: If schema is malformed

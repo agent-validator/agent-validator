@@ -1,7 +1,7 @@
 """Error classes for agent_validator."""
 
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 
 class ValidationError(Exception):
@@ -13,7 +13,7 @@ class ValidationError(Exception):
         reason: str,
         attempt: int,
         correlation_id: Optional[str] = None,
-        errors: Optional[List[Dict[str, Any]]] = None,
+        errors: Optional[list[dict[str, Any]]] = None,
     ):
         self.path = path
         self.reason = reason

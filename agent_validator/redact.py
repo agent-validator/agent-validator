@@ -1,7 +1,7 @@
 """Redaction utilities for sensitive data."""
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 # Default redaction patterns
 DEFAULT_PATTERNS = {
@@ -24,10 +24,10 @@ DEFAULT_PATTERNS = {
 class Redactor:
     """Redactor for sensitive data patterns."""
 
-    def __init__(self, patterns: Optional[Dict[str, str]] = None):
+    def __init__(self, patterns: Optional[dict[str, str]] = None):
         """
         Initialize redactor with patterns.
-        
+
         Args:
             patterns: Dictionary of pattern_name -> regex_pattern
         """
@@ -46,10 +46,10 @@ class Redactor:
     def redact_text(self, text: str) -> str:
         """
         Redact sensitive data from text.
-        
+
         Args:
             text: Text to redact
-            
+
         Returns:
             Redacted text
         """
@@ -83,11 +83,11 @@ class Redactor:
     def redact_dict(self, data: Any, max_depth: int = 10) -> Any:
         """
         Recursively redact sensitive data from dictionary or other data structures.
-        
+
         Args:
             data: Data to redact
             max_depth: Maximum recursion depth
-            
+
         Returns:
             Redacted data
         """
@@ -157,15 +157,15 @@ class Redactor:
 _default_redactor = Redactor()
 
 
-def redact_sensitive_data(data: Any, patterns: Optional[Dict[str, str]] = None, max_depth: int = 10) -> Any:
+def redact_sensitive_data(data: Any, patterns: Optional[dict[str, str]] = None, max_depth: int = 10) -> Any:
     """
     Redact sensitive data from any data structure.
-    
+
     Args:
         data: Data to redact
         patterns: Optional custom patterns
         max_depth: Maximum recursion depth
-        
+
     Returns:
         Redacted data
     """
@@ -180,7 +180,7 @@ def redact_sensitive_data(data: Any, patterns: Optional[Dict[str, str]] = None, 
 def add_redaction_pattern(name: str, pattern: str) -> None:
     """
     Add a custom redaction pattern to the default redactor.
-    
+
     Args:
         name: Pattern name
         pattern: Regex pattern

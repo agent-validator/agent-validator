@@ -1,7 +1,7 @@
 """Schema definition and validation logic."""
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from .errors import SchemaError
 from .typing_ import ValidatorFunction
@@ -12,11 +12,11 @@ class Schema:
 
     def __init__(
         self,
-        schema_dict: Dict[str, Any],
+        schema_dict: dict[str, Any],
         max_keys: Optional[int] = None,
         max_list_len: Optional[int] = None,
         max_str_len: Optional[int] = None,
-        validators: Optional[Dict[str, ValidatorFunction]] = None,
+        validators: Optional[dict[str, ValidatorFunction]] = None,
     ):
         self.schema_dict = schema_dict
         self.max_keys = max_keys
@@ -60,7 +60,7 @@ class Schema:
             else:
                 raise SchemaError(f"Invalid schema value type: {type(value)}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert schema to dictionary representation."""
         return {
             "schema": self.schema_dict,
@@ -70,7 +70,7 @@ class Schema:
             "validators": list(self.validators.keys()) if self.validators else None,
         }
 
-    def _serialize_schema_dict(self, schema_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def _serialize_schema_dict(self, schema_dict: dict[str, Any]) -> dict[str, Any]:
         """Serialize schema dict with type names instead of Python types."""
         serialized = {}
         for key, value in schema_dict.items():
@@ -112,7 +112,7 @@ class Schema:
                 serialized[key] = str(value)
         return serialized
 
-    def _deserialize_schema_dict(self, schema_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def _deserialize_schema_dict(self, schema_dict: dict[str, Any]) -> dict[str, Any]:
         """Deserialize schema dict with string type names to Python types."""
         deserialized = {}
         for key, value in schema_dict.items():
@@ -176,7 +176,7 @@ class Schema:
         return json.dumps(serialized_dict, indent=2)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Schema":
+    def from_dict(cls, data: dict[str, Any]) -> "Schema":
         """Create schema from dictionary representation."""
         schema_dict = data["schema"]
         # Deserialize if the schema contains string type names
@@ -197,7 +197,7 @@ class Schema:
         )
 
     @classmethod
-    def _deserialize_schema_dict_static(cls, schema_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def _deserialize_schema_dict_static(cls, schema_dict: dict[str, Any]) -> dict[str, Any]:
         """Static method to deserialize schema dict with string type names to Python types."""
         deserialized = {}
         for key, value in schema_dict.items():

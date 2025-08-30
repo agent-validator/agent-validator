@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import requests
 
@@ -15,18 +15,18 @@ from .redact import redact_sensitive_data
 def log_validation_result(
     correlation_id: Optional[str],
     valid: bool,
-    errors: List[Dict[str, Any]],
+    errors: list[dict[str, Any]],
     attempts: int,
     duration_ms: int,
     mode: str,
-    context: Dict[str, Any],
+    context: dict[str, Any],
     output_sample: str,
     log_to_cloud: bool = False,
     config: Optional[Any] = None,
 ) -> None:
     """
     Log validation result to local file and optionally to cloud.
-    
+
     Args:
         correlation_id: Unique identifier for the validation
         valid: Whether validation succeeded
@@ -75,7 +75,7 @@ def log_validation_result(
             print(f"Warning: Cloud logging failed: {e}")
 
 
-def _log_locally(log_entry: Dict[str, Any]) -> None:
+def _log_locally(log_entry: dict[str, Any]) -> None:
     """Log entry to local JSONL file."""
     # Create logs directory
     logs_dir = Path.home() / ".agent_validator" / "logs"
@@ -90,7 +90,7 @@ def _log_locally(log_entry: Dict[str, Any]) -> None:
         f.write(json.dumps(log_entry) + "\n")
 
 
-def _log_to_cloud(log_entry: Dict[str, Any], config: Any) -> None:
+def _log_to_cloud(log_entry: dict[str, Any], config: Any) -> None:
     """Log entry to cloud service."""
     if not config.license_key:
         raise CloudLogError("No license key configured for cloud logging")
@@ -141,13 +141,13 @@ def _log_to_cloud(log_entry: Dict[str, Any], config: Any) -> None:
         raise CloudLogError(f"HTTP request failed: {e}")
 
 
-def get_recent_logs(n: int = 20) -> List[Dict[str, Any]]:
+def get_recent_logs(n: int = 20) -> list[dict[str, Any]]:
     """
     Get recent log entries from local files.
-    
+
     Args:
         n: Number of entries to return
-        
+
     Returns:
         List of log entries (most recent first)
     """

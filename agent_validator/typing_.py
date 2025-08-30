@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 
 class ValidationMode(Enum):
@@ -27,6 +27,6 @@ class Config:
 
 
 # Type aliases
-SchemaDict = Dict[str, Any]
-RetryFunction = Callable[[str, Dict[str, Any]], Union[str, Dict[str, Any]]]
+SchemaDict = dict[str, Any]
+RetryFunction = Callable[[str, dict[str, Any]], Union[str, dict[str, Any]]]
 ValidatorFunction = Callable[[Any], bool]

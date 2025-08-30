@@ -30,7 +30,7 @@ class AgentValidatorSmokeTester:
 
     def __init__(self, backend_url: Optional[str] = "http://localhost:9090"):
         """Initialize the smoke tester.
-        
+
         Args:
             backend_url: Optional backend URL for cloud testing (default: http://localhost:9090)
         """
@@ -556,7 +556,7 @@ call_count = 0
 def mock_retry_fn(prompt: str, context: dict) -> str:
     global call_count
     call_count += 1
-    
+
     if call_count == 1:
         return '{"name": "John", "age": "invalid"}'  # Invalid
     else:
@@ -885,7 +885,7 @@ def failing_function(prompt, context):
     attempt_count += 1
     current_time = time.time()
     delays.append(current_time - start_time)
-    
+
     if attempt_count < 3:
         raise Exception("Simulated failure")  # This will trigger retry
     else:
@@ -902,28 +902,28 @@ retry_fn_with_backoff = create_retry_function(
 
 try:
     result = retry_fn_with_backoff("test prompt", {"test": "context"})
-    
+
     if attempt_count != 3:
         print(f"Expected 3 attempts, got {attempt_count}")
         sys.exit(1)
-    
+
     # Check that delays show exponential backoff with jitter
     if len(delays) < 2:
         print("Not enough delay measurements")
         sys.exit(1)
-    
+
     # First delay should be around 0.5s (with jitter)
     if delays[1] < 0.3 or delays[1] > 1.0:
         print(f"First delay {delays[1]}s not in expected range")
         sys.exit(1)
-    
+
     # Second delay should be around 1s (with jitter)
     if delays[2] < 0.7 or delays[2] > 2.0:
         print(f"Second delay {delays[2]}s not in expected range")
         sys.exit(1)
-    
+
     print("✅ Exponential backoff and jitter working correctly")
-    
+
 except Exception as e:
     print(f"Retry function failed: {e}")
     sys.exit(1)
@@ -1013,8 +1013,8 @@ config = Config(
 )
 
 result = validate(
-    sensitive_data, 
-    schema, 
+    sensitive_data,
+    schema,
     mode=ValidationMode.STRICT,
     log_to_cloud=True,
     config=config,
@@ -1066,8 +1066,8 @@ config = Config(
 
 # This should succeed even if cloud logging fails
 result = validate(
-    data, 
-    schema, 
+    data,
+    schema,
     mode=ValidationMode.STRICT,
     log_to_cloud=True,
     config=config,

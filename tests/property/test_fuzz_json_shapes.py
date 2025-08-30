@@ -1,7 +1,7 @@
 """Property-based fuzzing tests for JSON shapes."""
 
 import random
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 from hypothesis import given
@@ -10,7 +10,7 @@ from hypothesis import strategies as st
 from agent_validator import Schema, ValidationError, ValidationMode, validate
 
 
-def generate_random_schema(depth: int = 0, max_depth: int = 3) -> Dict[str, Any]:
+def generate_random_schema(depth: int = 0, max_depth: int = 3) -> dict[str, Any]:
     """Generate a random schema for testing."""
     if depth >= max_depth:
         return {"value": random.choice([str, int, float, bool])}
@@ -39,7 +39,7 @@ def generate_random_schema(depth: int = 0, max_depth: int = 3) -> Dict[str, Any]
     return schema
 
 
-def generate_data_for_schema(schema: Dict[str, Any], depth: int = 0, max_depth: int = 3) -> Dict[str, Any]:
+def generate_data_for_schema(schema: dict[str, Any], depth: int = 0, max_depth: int = 3) -> dict[str, Any]:
     """Generate data that matches a schema."""
     if depth >= max_depth:
         return {"value": "test"}
@@ -85,7 +85,7 @@ def generate_data_for_schema(schema: Dict[str, Any], depth: int = 0, max_depth: 
     return data
 
 
-def generate_invalid_data_for_schema(schema: Dict[str, Any], depth: int = 0, max_depth: int = 3) -> Dict[str, Any]:
+def generate_invalid_data_for_schema(schema: dict[str, Any], depth: int = 0, max_depth: int = 3) -> dict[str, Any]:
     """Generate data that doesn't match a schema."""
     if depth >= max_depth:
         return {"value": 123}  # Wrong type

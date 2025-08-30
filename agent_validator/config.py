@@ -11,7 +11,7 @@ from .typing_ import Config
 def get_config() -> Config:
     """
     Get configuration with precedence: function args > env vars > config file.
-    
+
     Returns:
         Config object with current settings
     """
@@ -105,7 +105,7 @@ def get_config() -> Config:
 def save_config(config: Config) -> None:
     """
     Save configuration to file.
-    
+
     Args:
         config: Configuration to save
     """
