@@ -47,18 +47,26 @@ def validate(
     context = context or {}
     correlation_id = context.get("correlation_id")
     
+    # Store original input for retry function
+    original_input = agent_output
+    
     # Parse string output to dict if needed
     if isinstance(agent_output, str):
         try:
             agent_output = json.loads(agent_output)
         except json.JSONDecodeError:
             if mode == ValidationMode.STRICT:
-                raise ValidationError(
-                    path="root",
-                    reason="Invalid JSON",
-                    attempt=0,
-                    correlation_id=correlation_id,
-                )
+                # If we have a retry function, try to get better output
+                if retry_fn:
+                    # Don't raise immediately, let the retry logic handle it
+                    pass
+                else:
+                    raise ValidationError(
+                        path="root",
+                        reason="Invalid JSON",
+                        attempt=0,
+                        correlation_id=correlation_id,
+                    )
             # In COERCE mode, treat as plain string
             agent_output = {"raw_output": agent_output}
     
@@ -72,35 +80,41 @@ def validate(
             correlation_id=correlation_id,
         )
     
-    # Validate against schema
-    try:
-        validated_output = _validate_against_schema(
-            agent_output, schema, mode, config
-        )
-        
-        # Log successful validation
-        log_validation_result(
+    # Check if we need to retry due to JSON parsing failure
+    json_parse_failed = False
+    if isinstance(original_input, str) and isinstance(agent_output, dict) and "raw_output" in agent_output:
+        json_parse_failed = True
+    
+    # Check if we need to retry due to JSON parsing failure
+    json_parse_failed = False
+    if isinstance(original_input, str) and isinstance(agent_output, dict) and "raw_output" in agent_output:
+        json_parse_failed = True
+    
+    # Initialize retry variables
+    start_time = None
+    last_error = None
+    
+    # If JSON parsing failed and we have a retry function, go directly to retry
+    if json_parse_failed and retry_fn:
+        start_time = time.time()
+        last_error = ValidationError(
+            path="root",
+            reason="Invalid JSON",
+            attempt=0,
             correlation_id=correlation_id,
-            valid=True,
-            errors=[],
-            attempts=1,
-            duration_ms=0,
-            mode=mode.value,
-            context=context,
-            output_sample=output_str[:1000],
-            log_to_cloud=log_to_cloud,
-            config=config,
         )
-        
-        return validated_output
-        
-    except ValidationError as e:
-        # If no retry function, re-raise immediately
-        if not retry_fn:
+    else:
+        # Validate against schema
+        try:
+            validated_output = _validate_against_schema(
+                agent_output, schema, mode, config
+            )
+            
+            # Log successful validation
             log_validation_result(
                 correlation_id=correlation_id,
-                valid=False,
-                errors=[{"path": e.path, "reason": e.reason}],
+                valid=True,
+                errors=[],
                 attempts=1,
                 duration_ms=0,
                 mode=mode.value,
@@ -109,16 +123,36 @@ def validate(
                 log_to_cloud=log_to_cloud,
                 config=config,
             )
-            raise
-        
-        # Try retries
-        start_time = time.time()
-        last_error = e
-        
+            
+            return validated_output
+            
+        except ValidationError as e:
+            # If no retry function, re-raise immediately
+            if not retry_fn:
+                log_validation_result(
+                    correlation_id=correlation_id,
+                    valid=False,
+                    errors=[{"path": e.path, "reason": e.reason}],
+                    attempts=1,
+                    duration_ms=0,
+                    mode=mode.value,
+                    context=context,
+                    output_sample=output_str[:1000],
+                    log_to_cloud=log_to_cloud,
+                    config=config,
+                )
+                raise
+            
+            # Try retries
+            start_time = time.time()
+            last_error = e
+    
+    # Retry for both JSON parsing failures and schema validation failures
+    if start_time is not None and last_error is not None:
         for attempt in range(1, retries + 1):
             try:
                 # Call retry function
-                new_output = retry_fn("", context)
+                new_output = retry_fn(original_input, context)
                 
                 # Parse new output
                 if isinstance(new_output, str):
@@ -256,7 +290,7 @@ def _validate_against_schema(
                 result[key] = value
             elif isinstance(expected_type, type):
                 result[key] = _validate_type(
-                    value, expected_type, mode, f"{path}.{key}"
+                    value, expected_type, mode, f"{path}.{key}", config
                 )
             elif isinstance(expected_type, dict):
                 # Nested schema
@@ -293,7 +327,7 @@ def _validate_against_schema(
                 element_type = expected_type[0]
                 if isinstance(element_type, type):
                     result[key] = [
-                        _validate_type(item, element_type, mode, f"{path}.{key}[{i}]")
+                        _validate_type(item, element_type, mode, f"{path}.{key}[{i}]", config)
                         for i, item in enumerate(value)
                     ]
                 elif isinstance(element_type, dict):
@@ -311,11 +345,18 @@ def _validate_against_schema(
 
 
 def _validate_type(
-    value: Any, expected_type: type, mode: ValidationMode, path: str
+    value: Any, expected_type: type, mode: ValidationMode, path: str, config: Optional[Config] = None
 ) -> Any:
     """Validate and optionally coerce a value to the expected type."""
     
     if isinstance(value, expected_type):
+        # Apply size limits for strings
+        if expected_type == str and config and len(value) > config.max_str_len:
+            raise ValidationError(
+                path=path,
+                reason="size_limit",
+                attempt=0,
+            )
         return value
     
     if mode == ValidationMode.STRICT:
@@ -387,7 +428,15 @@ def _validate_type(
             )
     
     elif expected_type == str:
-        return str(value)
+        result = str(value)
+        # Apply size limits for coerced strings
+        if config and len(result) > config.max_str_len:
+            raise ValidationError(
+                path=path,
+                reason="size_limit",
+                attempt=0,
+            )
+        return result
     
     else:
         raise ValidationError(

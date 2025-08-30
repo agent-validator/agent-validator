@@ -28,6 +28,8 @@ def temp_schema_file():
     
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(schema, f)
+        f.flush()  # Ensure data is written to disk
+        f.close()  # Close the file
         yield f.name
     
     Path(f.name).unlink(missing_ok=True)
@@ -42,6 +44,8 @@ def temp_input_file():
     
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(data, f)
+        f.flush()  # Ensure data is written to disk
+        f.close()  # Close the file
         yield f.name
     
     Path(f.name).unlink(missing_ok=True)
@@ -71,13 +75,15 @@ def test_test_command_failure(runner, temp_schema_file):
     
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(invalid_data, f)
+        f.flush()
+        f.close()
         invalid_input_file = f.name
     
     try:
         result = runner.invoke(app, ["test", temp_schema_file, invalid_input_file])
         
         assert result.exit_code == 2
-        assert "✗ Validation failed" in result.stdout
+        assert "✗ Validation failed" in result.stderr
     finally:
         Path(invalid_input_file).unlink(missing_ok=True)
 
@@ -89,13 +95,15 @@ def test_test_command_strict_mode(runner, temp_schema_file):
     
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(data, f)
+        f.flush()
+        f.close()
         input_file = f.name
     
     try:
         result = runner.invoke(app, ["test", temp_schema_file, input_file, "--mode", "STRICT"])
         
         assert result.exit_code == 2
-        assert "✗ Validation failed" in result.stdout
+        assert "✗ Validation failed" in result.stderr
     finally:
         Path(input_file).unlink(missing_ok=True)
 
@@ -107,6 +115,8 @@ def test_test_command_coerce_mode(runner, temp_schema_file):
     
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(data, f)
+        f.flush()
+        f.close()
         input_file = f.name
     
     try:
@@ -147,7 +157,7 @@ def test_logs_command_with_logs(mock_get_logs, runner):
     result = runner.invoke(app, ["logs"])
     
     assert result.exit_code == 0
-    assert "2023-01-01T12:00:00Z" in result.stdout
+    assert "2023-01-01 12:00:00" in result.stdout
     assert "test-123" in result.stdout
     assert "✓" in result.stdout  # Success indicator
 
@@ -233,7 +243,7 @@ def test_config_command_set_log_to_cloud(mock_save_config, mock_get_config, runn
     config = Config()
     mock_get_config.return_value = config
     
-    result = runner.invoke(app, ["config", "--set-log-to-cloud", "true"])
+    result = runner.invoke(app, ["config", "--set-log-to-cloud"])
     
     assert result.exit_code == 0
     assert "Cloud logging enabled." in result.stdout

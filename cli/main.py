@@ -153,7 +153,9 @@ def test(
         # Handle both direct schema and wrapped schema formats
         if "schema" in schema_data:
             # Wrapped format: {"schema": {...}}
-            schema = Schema.from_dict(schema_data)
+            # Convert string types in the nested schema
+            converted_schema_dict = convert_string_schema_to_types(schema_data["schema"])
+            schema = Schema(converted_schema_dict)
         else:
             # Direct format: {...} - convert string types to Python types
             converted_schema = convert_string_schema_to_types(schema_data)
@@ -191,7 +193,7 @@ def config(
         None, "--set-endpoint", help="Set cloud endpoint"
     ),
     set_log_to_cloud: Optional[bool] = typer.Option(
-        None, "--set-log-to-cloud", help="Enable/disable cloud logging"
+        None, "--set-log-to-cloud", help="Enable/disable cloud logging", is_flag=True
     ),
 ) -> None:
     """Manage configuration."""

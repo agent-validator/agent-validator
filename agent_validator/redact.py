@@ -7,14 +7,17 @@ from typing import Any, Dict, List, Optional, Union
 # Default redaction patterns
 DEFAULT_PATTERNS = {
     "license_key": r"(?i)(license[_-]?key|licensekey)[\s]*[:=][\s]*['\"]?([a-zA-Z0-9_-]{20,})['\"]?",
-    "license_key_value": r"^license-[a-zA-Z0-9_-]{20,}$",
+    "license_key_value": r"license-[a-zA-Z0-9_-]+",
     "api_key": r"(?i)(api[_-]?key|apikey)[\s]*[:=][\s]*['\"]?([a-zA-Z0-9_-]{20,})['\"]?",
     "jwt": r"(?i)(bearer|jwt|token)[\s]*[:=][\s]*['\"]?([a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+)['\"]?",
+    "jwt_value": r"^Bearer\s+[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$",
     "email": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
     "phone": r"(?i)(phone|tel|mobile)[\s]*[:=][\s]*['\"]?(\+?[\d\s\-\(\)]{10,})['\"]?",
+    "phone_value": r"^\+?[\d\s\-\(\)]{10,}$",
     "ssn": r"\b\d{3}-\d{2}-\d{4}\b",
     "credit_card": r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b",
     "password": r"(?i)(password|passwd|pwd)[\s]*[:=][\s]*['\"]?([^\s'\"]+)['\"]?",
+    "password_value": r"^(?=.*[a-z])(?=.*\d)[^\s'\"]{8,}$",
     "secret": r"(?i)(secret|key)[\s]*[:=][\s]*['\"]?([a-zA-Z0-9_-]{20,})['\"]?",
 }
 
@@ -29,7 +32,13 @@ class Redactor:
         Args:
             patterns: Dictionary of pattern_name -> regex_pattern
         """
-        self.patterns = patterns or DEFAULT_PATTERNS.copy()
+        if patterns:
+            # Merge custom patterns with default patterns
+            self.patterns = DEFAULT_PATTERNS.copy()
+            self.patterns.update(patterns)
+        else:
+            self.patterns = DEFAULT_PATTERNS.copy()
+        
         self.compiled_patterns = {
             name: re.compile(pattern, re.IGNORECASE | re.MULTILINE)
             for name, pattern in self.patterns.items()
@@ -50,22 +59,25 @@ class Redactor:
         
         redacted = text
         
+        # Process patterns in a specific order to avoid conflicts
+        # Start with specific patterns first
+        if "email" in self.compiled_patterns:
+            redacted = self.compiled_patterns["email"].sub(lambda m: self._redact_email(m.group(0)), redacted)
+        
+        if "phone_value" in self.compiled_patterns:
+            redacted = self.compiled_patterns["phone_value"].sub(lambda m: self._redact_phone(m.group(0)), redacted)
+        
+        if "ssn" in self.compiled_patterns:
+            redacted = self.compiled_patterns["ssn"].sub(lambda m: self._redact_ssn(m.group(0)), redacted)
+        
+        if "credit_card" in self.compiled_patterns:
+            redacted = self.compiled_patterns["credit_card"].sub(lambda m: self._redact_credit_card(m.group(0)), redacted)
+        
+        # Then process general patterns
         for pattern_name, pattern in self.compiled_patterns.items():
-            if pattern_name in ["license_key", "license_key_value", "api_key", "jwt", "password", "secret"]:
+            if pattern_name in ["license_key", "license_key_value", "api_key", "jwt", "jwt_value", "password", "password_value", "secret", "phone"] or pattern_name.startswith("custom_"):
                 # Replace the entire match
                 redacted = pattern.sub("[REDACTED]", redacted)
-            elif pattern_name == "email":
-                # Replace with redacted email
-                redacted = pattern.sub(lambda m: self._redact_email(m.group(0)), redacted)
-            elif pattern_name == "phone":
-                # Replace with redacted phone
-                redacted = pattern.sub(lambda m: self._redact_phone(m.group(0)), redacted)
-            elif pattern_name == "ssn":
-                # Replace with redacted SSN
-                redacted = pattern.sub(lambda m: self._redact_ssn(m.group(0)), redacted)
-            elif pattern_name == "credit_card":
-                # Replace with redacted credit card
-                redacted = pattern.sub(lambda m: self._redact_credit_card(m.group(0)), redacted)
         
         return redacted
     
@@ -84,10 +96,17 @@ class Redactor:
             return "[REDACTED - MAX DEPTH]"
         
         if isinstance(data, dict):
-            return {
-                key: self.redact_dict(value, max_depth - 1)
-                for key, value in data.items()
-            }
+            result = {}
+            for key, value in data.items():
+                # Special handling for password fields
+                if isinstance(value, str) and "password" in key.lower():
+                    if "password_value" in self.compiled_patterns:
+                        result[key] = self.compiled_patterns["password_value"].sub("[REDACTED]", value)
+                    else:
+                        result[key] = self.redact_dict(value, max_depth - 1)
+                else:
+                    result[key] = self.redact_dict(value, max_depth - 1)
+            return result
         elif isinstance(data, list):
             return [
                 self.redact_dict(item, max_depth - 1)
@@ -107,7 +126,7 @@ class Redactor:
         if len(username) <= 2:
             redacted_username = "*" * len(username)
         else:
-            redacted_username = username[0] + "*" * (len(username) - 2) + username[-1]
+            redacted_username = username[0] + "***" + username[-1]
         
         return f"{redacted_username}@{domain}"
     
@@ -121,7 +140,10 @@ class Redactor:
     
     def _redact_ssn(self, ssn: str) -> str:
         """Redact social security number."""
-        return "***-**-" + ssn[-4:]
+        digits = re.sub(r"\D", "", ssn)
+        if len(digits) < 4:
+            return "[REDACTED]"
+        return "***-**-" + digits[-4:]
     
     def _redact_credit_card(self, card: str) -> str:
         """Redact credit card number."""
@@ -129,20 +151,21 @@ class Redactor:
         if len(digits) < 4:
             return "[REDACTED]"
         
-        return "*" * (len(digits) - 4) + digits[-4:]
+        return "*" * 12 + digits[-4:]
 
 
 # Global redactor instance
 _default_redactor = Redactor()
 
 
-def redact_sensitive_data(data: Any, patterns: Optional[Dict[str, str]] = None) -> Any:
+def redact_sensitive_data(data: Any, patterns: Optional[Dict[str, str]] = None, max_depth: int = 10) -> Any:
     """
     Redact sensitive data from any data structure.
     
     Args:
         data: Data to redact
         patterns: Optional custom patterns
+        max_depth: Maximum recursion depth
         
     Returns:
         Redacted data
@@ -152,7 +175,7 @@ def redact_sensitive_data(data: Any, patterns: Optional[Dict[str, str]] = None) 
     else:
         redactor = _default_redactor
     
-    return redactor.redact_dict(data)
+    return redactor.redact_dict(data, max_depth)
 
 
 def add_redaction_pattern(name: str, pattern: str) -> None:

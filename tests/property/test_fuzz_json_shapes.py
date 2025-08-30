@@ -224,14 +224,13 @@ def test_schema_json_serialization():
     assert deserialized_schema.schema_dict == original_schema.schema_dict
 
 
-@given(st.integers(min_value=1, max_value=10))
-def test_size_limits_enforced(max_size):
+def test_size_limits_enforced():
     """Test that size limits are enforced."""
     # Create a schema with a string field
     schema = Schema({"data": str})
     
-    # Create data that exceeds the limit
-    oversized_data = {"data": "x" * (max_size + 1000)}
+    # Create data that exceeds the default string length limit (8192)
+    oversized_data = {"data": "x" * 10000}
     
     # Should fail validation
     with pytest.raises(ValidationError, match="size_limit"):
