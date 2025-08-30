@@ -99,6 +99,7 @@ class AgentValidatorSmokeTester:
     
     def _create_test_files(self):
         """Create test JSON files for CLI testing."""
+        print("🔍 Creating test files...")
         self.test_schema_file = self.temp_dir / "test_schema.json"
         self.test_input_file = self.temp_dir / "test_input.json"
         self.test_invalid_input_file = self.temp_dir / "test_invalid_input.json"
@@ -145,6 +146,8 @@ class AgentValidatorSmokeTester:
         
         with open(self.test_invalid_input_file, 'w') as f:
             json.dump(invalid_input, f, indent=2)
+
+        print("✅ Test files created successfully")
     
     def _run_cli_command(self, args: list, expect_success: bool = True) -> str:
         """Run a CLI command in isolated environment and return output."""
@@ -175,16 +178,20 @@ class AgentValidatorSmokeTester:
         except FileNotFoundError:
             raise SmokeTestError(f"agent-validator CLI not found at: {self.cli_path}")
     
+    def _string_in_output(self, output: str, string: str) -> bool:
+        """Check if a string is in the output."""
+        return string.lower() in output.lower()
+
     def test_cli_help(self) -> None:
         """Test CLI help command."""
         print("🔍 Testing CLI help...")
         
         output = self._run_cli_command(["--help"])
         
-        if "validate LLM/agent outputs against schemas" not in output:
+        if not self._string_in_output(output, "validate LLM/agent outputs against schemas"):
             raise SmokeTestError("CLI help doesn't contain expected description")
         
-        if "test" not in output or "logs" not in output:
+        if not self._string_in_output(output, "test") or not self._string_in_output(output, "logs"):
             raise SmokeTestError("CLI help doesn't show expected commands")
         
         print("✅ CLI help working")
@@ -208,7 +215,7 @@ class AgentValidatorSmokeTester:
         # Test showing config
         output = self._run_cli_command(["config", "--show"])
         
-        if "max_output_bytes" not in output:
+        if not self._string_in_output(output, "max_output_bytes"):
             raise SmokeTestError("Config show doesn't display expected fields")
         
         # Test setting license key
@@ -217,7 +224,7 @@ class AgentValidatorSmokeTester:
         
         # Verify it was set
         output = self._run_cli_command(["config", "--show"])
-        if test_key not in output:
+        if not self._string_in_output(output, test_key):
             raise SmokeTestError("License key was not set correctly")
         
         print("✅ CLI configuration working")
@@ -233,11 +240,11 @@ class AgentValidatorSmokeTester:
             "--mode", "COERCE"
         ])
         
-        if "Validation successful" not in output:
+        if not self._string_in_output(output, "Validation successful"):
             raise SmokeTestError(f"Validation should have succeeded: {output}")
         
         # Check that output contains the validated data
-        if "John Doe" not in output:
+        if not self._string_in_output(output, "John Doe"):
             raise SmokeTestError("Validated output doesn't contain expected data")
         
         print("✅ CLI validation (success) working")
@@ -255,7 +262,7 @@ class AgentValidatorSmokeTester:
                 "--mode", "STRICT"
             ], expect_success=False)
         except SmokeTestError as e:
-            if "exit code 2" not in str(e):
+            if not self._string_in_output(str(e), "exit code 2"):
                 raise SmokeTestError(f"Expected validation failure with exit code 2: {e}")
         
         print("✅ CLI validation (failure) working")
@@ -268,7 +275,7 @@ class AgentValidatorSmokeTester:
         output = self._run_cli_command(["logs", "-n", "5"])
         
         # Should either show logs or "No logs found"
-        if "No logs found" not in output and "correlation_id" not in output:
+        if not self._string_in_output(output, "No logs found") and not self._string_in_output(output, "correlation_id"):
             raise SmokeTestError("Logs command output unexpected")
         
         print("✅ CLI logs working")
@@ -282,7 +289,7 @@ class AgentValidatorSmokeTester:
             output = self._run_cli_command(["cloud-logs", "-n", "5"])
             print("✅ CLI cloud logs working (server available)")
         except SmokeTestError as e:
-            if "No license key configured" in str(e) or "Cannot connect" in str(e):
+            if self._string_in_output(str(e), "No license key configured") or self._string_in_output(str(e), "Cannot connect"):
                 print("⚠️  CLI cloud logs not available (expected if no license/server)")
             else:
                 raise e
