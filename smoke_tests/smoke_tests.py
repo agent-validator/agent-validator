@@ -656,6 +656,60 @@ print("✅ Logging functionality working")
         except Exception as e:
             raise SmokeTestError(f"Logging test failed: {e}")
     
+    def test_local_log_files(self) -> None:
+        """Test that log files are created in the local log location."""
+        print("🔍 Testing local log file creation...")
+        
+        try:
+            # Get today's date for log file name
+            from datetime import datetime
+            today = datetime.utcnow().strftime("%Y-%m-%d")
+            
+            # Check if log directory exists
+            log_dir = Path.home() / ".agent_validator" / "logs"
+            if not log_dir.exists():
+                raise SmokeTestError(f"Log directory does not exist: {log_dir}")
+            
+            # Check if today's log file exists
+            log_file = log_dir / f"{today}.jsonl"
+            if not log_file.exists():
+                raise SmokeTestError(f"Today's log file does not exist: {log_file}")
+            
+            # Check if log file has content
+            with open(log_file, 'r') as f:
+                log_lines = f.readlines()
+            
+            if not log_lines:
+                raise SmokeTestError("Log file is empty")
+            
+            # Check if log entries are valid JSON
+            valid_entries = 0
+            for line in log_lines:
+                try:
+                    json.loads(line.strip())
+                    valid_entries += 1
+                except json.JSONDecodeError:
+                    continue
+            
+            if valid_entries == 0:
+                raise SmokeTestError("No valid JSON entries found in log file")
+            
+            # Check if our test entries are in the log
+            test_entries = 0
+            for line in log_lines:
+                try:
+                    entry = json.loads(line.strip())
+                    # Look for entries with our test context
+                    if entry.get("context", {}).get("test"):
+                        test_entries += 1
+                except json.JSONDecodeError:
+                    continue
+            
+            print(f"✅ Local log files working - found {valid_entries} valid entries, {test_entries} test entries")
+            
+        except Exception as e:
+            raise SmokeTestError(f"Local log file test failed: {e}")
+    
     def test_cloud_functionality(self) -> None:
         """Test cloud functionality with configured backend URL."""
         print("🔍 Testing cloud functionality...")
@@ -726,6 +780,16 @@ print("✅ Logging functionality working")
             self.test_library_config()
             self.test_library_retry_logic()
             self.test_library_logging()
+            
+            # Test local log file creation
+            self.test_local_log_files()
+            
+            # Test advanced functionality
+            self.test_redaction_patterns()
+            self.test_exponential_backoff_jitter()
+            self.test_configuration_precedence()
+            self.test_cloud_redaction()
+            self.test_cloud_failsafe()
             
             print("=" * SMOKE_TEST_OUTPUT_LINES)
             print("🎉 All smoke tests passed!")
