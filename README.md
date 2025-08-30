@@ -503,6 +503,9 @@ mypy agent_validator cli
 ruff check .
 black --check .
 isort --check-only .
+
+# Run smoke tests (isolated environment)
+python smoke_tests/smoke_tests.py
 ```
 
 ### 🔧 Pre-commit Hooks
@@ -511,6 +514,32 @@ isort --check-only .
 pre-commit install
 pre-commit run --all-files
 ```
+
+### 🚀 Smoke Tests
+
+Smoke tests verify the complete user experience in an isolated environment:
+
+```bash
+# Run comprehensive smoke tests
+python smoke_tests/smoke_tests.py
+```
+
+**What gets tested:**
+
+- ✅ Package installation in isolated environment
+- ✅ CLI command availability and functionality
+- ✅ Library imports and basic operations
+- ✅ Configuration management
+- ✅ Log generation and retrieval
+- ✅ Schema validation (strict and coerce modes)
+- ✅ Error handling and edge cases
+
+**Benefits:**
+
+- 🛡️ No pollution to your development environment
+- 🔄 Clean testing environment every time
+- 🧪 Tests real installation and usage scenarios
+- 🚀 Perfect for CI/CD integration
 
 ---
 
