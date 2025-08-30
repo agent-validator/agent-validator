@@ -93,8 +93,8 @@ def _log_locally(log_entry: Dict[str, Any]) -> None:
 
 def _log_to_cloud(log_entry: Dict[str, Any], config: Any) -> None:
     """Log entry to cloud service."""
-    if not config.api_key:
-        raise CloudLogError("No API key configured for cloud logging")
+    if not config.license_key:
+        raise CloudLogError("No license key configured for cloud logging")
     
     # Prepare payload
     payload = json.dumps(log_entry)
@@ -114,7 +114,7 @@ def _log_to_cloud(log_entry: Dict[str, Any], config: Any) -> None:
     # Prepare headers
     headers = {
         "Content-Type": "application/json",
-        "x-api-key": config.api_key,
+        "license-key": config.license_key,
     }
     
     # Add HMAC signature if webhook secret is configured

@@ -69,20 +69,184 @@ class Schema:
             "validators": list(self.validators.keys()) if self.validators else None,
         }
     
+    def _serialize_schema_dict(self, schema_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """Serialize schema dict with type names instead of Python types."""
+        serialized = {}
+        for key, value in schema_dict.items():
+            if value is None:
+                serialized[key] = None
+            elif isinstance(value, type):
+                # Convert Python types to string names
+                type_map = {
+                    str: "string",
+                    int: "integer",
+                    float: "float",
+                    bool: "boolean",
+                    list: "list",
+                    dict: "object",
+                }
+                serialized[key] = type_map.get(value, str(value))
+            elif isinstance(value, dict):
+                serialized[key] = self._serialize_schema_dict(value)
+            elif isinstance(value, list):
+                if len(value) == 1:
+                    element = value[0]
+                    if isinstance(element, type):
+                        type_map = {
+                            str: "string",
+                            int: "integer",
+                            float: "float",
+                            bool: "boolean",
+                            list: "list",
+                            dict: "object",
+                        }
+                        serialized[key] = [type_map.get(element, str(element))]
+                    elif isinstance(element, dict):
+                        serialized[key] = [self._serialize_schema_dict(element)]
+                    else:
+                        serialized[key] = [str(element)]
+                else:
+                    serialized[key] = [self._serialize_schema_dict(item) if isinstance(item, dict) else str(item) for item in value]
+            else:
+                serialized[key] = str(value)
+        return serialized
+    
+    def _deserialize_schema_dict(self, schema_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """Deserialize schema dict with string type names to Python types."""
+        deserialized = {}
+        for key, value in schema_dict.items():
+            if value is None:
+                deserialized[key] = None
+            elif isinstance(value, str):
+                # Convert string type names to Python types
+                type_map = {
+                    "string": str,
+                    "integer": int,
+                    "int": int,
+                    "float": float,
+                    "number": float,
+                    "boolean": bool,
+                    "bool": bool,
+                    "list": list,
+                    "array": list,
+                    "object": dict,
+                    "dict": dict,
+                }
+                deserialized[key] = type_map.get(value.lower(), value)
+            elif isinstance(value, dict):
+                deserialized[key] = self._deserialize_schema_dict(value)
+            elif isinstance(value, list):
+                if len(value) == 1:
+                    element = value[0]
+                    if isinstance(element, str):
+                        type_map = {
+                            "string": str,
+                            "integer": int,
+                            "int": int,
+                            "float": float,
+                            "number": float,
+                            "boolean": bool,
+                            "bool": bool,
+                            "list": list,
+                            "array": list,
+                            "object": dict,
+                            "dict": dict,
+                        }
+                        deserialized[key] = [type_map.get(element.lower(), element)]
+                    elif isinstance(element, dict):
+                        deserialized[key] = [self._deserialize_schema_dict(element)]
+                    else:
+                        deserialized[key] = [element]
+                else:
+                    deserialized[key] = [self._deserialize_schema_dict(item) if isinstance(item, dict) else item for item in value]
+            else:
+                deserialized[key] = value
+        return deserialized
+    
     def to_json(self) -> str:
         """Convert schema to JSON string."""
-        return json.dumps(self.to_dict(), indent=2)
+        serialized_dict = {
+            "schema": self._serialize_schema_dict(self.schema_dict),
+            "max_keys": self.max_keys,
+            "max_list_len": self.max_list_len,
+            "max_str_len": self.max_str_len,
+            "validators": list(self.validators.keys()) if self.validators else None,
+        }
+        return json.dumps(serialized_dict, indent=2)
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Schema":
         """Create schema from dictionary representation."""
         schema_dict = data["schema"]
+        # Deserialize if the schema contains string type names
+        if isinstance(schema_dict, dict):
+            # Check if any values are strings that look like type names
+            has_string_types = any(
+                isinstance(v, str) and v.lower() in ["string", "integer", "int", "float", "number", "boolean", "bool", "list", "array", "object", "dict"]
+                for v in schema_dict.values()
+            )
+            if has_string_types:
+                schema_dict = cls._deserialize_schema_dict_static(schema_dict)
+        
         return cls(
             schema_dict=schema_dict,
             max_keys=data.get("max_keys"),
             max_list_len=data.get("max_list_len"),
             max_str_len=data.get("max_str_len"),
         )
+    
+    @classmethod
+    def _deserialize_schema_dict_static(cls, schema_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """Static method to deserialize schema dict with string type names to Python types."""
+        deserialized = {}
+        for key, value in schema_dict.items():
+            if value is None:
+                deserialized[key] = None
+            elif isinstance(value, str):
+                # Convert string type names to Python types
+                type_map = {
+                    "string": str,
+                    "integer": int,
+                    "int": int,
+                    "float": float,
+                    "number": float,
+                    "boolean": bool,
+                    "bool": bool,
+                    "list": list,
+                    "array": list,
+                    "object": dict,
+                    "dict": dict,
+                }
+                deserialized[key] = type_map.get(value.lower(), value)
+            elif isinstance(value, dict):
+                deserialized[key] = cls._deserialize_schema_dict_static(value)
+            elif isinstance(value, list):
+                if len(value) == 1:
+                    element = value[0]
+                    if isinstance(element, str):
+                        type_map = {
+                            "string": str,
+                            "integer": int,
+                            "int": int,
+                            "float": float,
+                            "number": float,
+                            "boolean": bool,
+                            "bool": bool,
+                            "list": list,
+                            "array": list,
+                            "object": dict,
+                            "dict": dict,
+                        }
+                        deserialized[key] = [type_map.get(element.lower(), element)]
+                    elif isinstance(element, dict):
+                        deserialized[key] = [cls._deserialize_schema_dict_static(element)]
+                    else:
+                        deserialized[key] = [element]
+                else:
+                    deserialized[key] = [cls._deserialize_schema_dict_static(item) if isinstance(item, dict) else item for item in value]
+            else:
+                deserialized[key] = value
+        return deserialized
     
     @classmethod
     def from_json(cls, json_str: str) -> "Schema":

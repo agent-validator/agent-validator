@@ -49,12 +49,13 @@ try:
         retry_fn=call_agent,  # Function to retry if validation fails
         retries=2,
         mode=ValidationMode.COERCE,  # Allow type coercion
-        context={"task_id": "abc123"}
+        context={"correlation_id": "abc123"}  # Optional correlation ID for tracking
     )
     print("✅ Validation successful!")
     print(result)
 except ValidationError as e:
     print(f"❌ Validation failed: {e}")
+    print(f"Correlation ID: {e.correlation_id}")  # For debugging
 ```
 
 ### 🖥️ CLI Usage
@@ -66,11 +67,17 @@ agent-validator test schema.json input.json --mode COERCE
 # View recent logs
 agent-validator logs -n 20
 
+# View cloud logs
+agent-validator cloud-logs -n 20
+
+# Open web dashboard (secure proxy)
+agent-validator dashboard
+
 # Generate correlation ID
 agent-validator id
 
 # Configure cloud logging
-agent-validator config --set-api-key YOUR_API_KEY
+agent-validator config --set-license-key YOUR_LICENSE_KEY
 agent-validator config --set-log-to-cloud true
 ```
 
@@ -104,6 +111,41 @@ schema = Schema({
 - **Lists**: `[type]` for lists of that type
 - **Objects**: `dict` for nested objects
 - **Optional**: `None` for optional fields
+
+### 📄 Schema File Formats
+
+When using the CLI with JSON files, you can use either format:
+
+#### **Direct Schema Format** (Recommended)
+
+```json
+{
+  "name": "string",
+  "age": "integer",
+  "email": "string",
+  "is_active": "boolean",
+  "tags": ["string"],
+  "metadata": {
+    "source": "string",
+    "version": "string"
+  }
+}
+```
+
+#### **Wrapped Schema Format**
+
+```json
+{
+  "schema": {
+    "name": "string",
+    "age": "integer",
+    "email": "string",
+    "is_active": "boolean"
+  }
+}
+```
+
+**Supported string types**: `string`, `integer`, `int`, `float`, `number`, `boolean`, `bool`, `list`, `array`, `dict`, `object`
 
 ---
 
@@ -200,10 +242,30 @@ All validation attempts are logged to `~/.agent_validator/logs/YYYY-MM-DD.jsonl`
     "max_list_len": 2048,
     "max_dict_keys": 512
   },
-  "context": { "task_id": "abc123" },
+  "context": { "correlation_id": "abc123" },
   "output_sample": "{\"name\": \"John\", \"age\": 30}"
 }
 ```
+
+**Correlation IDs** are automatically generated for each validation attempt and help you:
+
+- 🔍 **Track specific validations** across logs and error messages
+- 🐛 **Debug issues** by correlating errors with specific validation attempts
+- 📊 **Monitor performance** by tracking validation duration and retry attempts
+- 🔗 **Link related operations** when using retry functions
+
+When viewing logs with `agent-validator logs`, logs are displayed in a clear table format:
+
+```bash
+┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┬─────────┬─────────┐
+│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │ Errors  │ Size    │
+├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┼─────────┼─────────┤
+│ 2025-08-30 18:40:00                 │      ✗ │        none │  strict │        1 │         0ms │       2 │    45B  │
+│ 2025-08-30 18:40:00                 │      ✓ │        none │  coerce │        1 │         0ms │       0 │    45B  │
+└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┴─────────┴─────────┘
+```
+
+Correlation IDs are truncated for readability and show `[none]` when not set.
 
 ### ☁️ Cloud Logging
 
@@ -214,8 +276,8 @@ from agent_validator import Config
 
 config = Config(
     log_to_cloud=True,
-    api_key="your-api-key",
-    cloud_endpoint="https://api.agentvalidator.com"
+    license_key="your-license-key",
+    cloud_endpoint="https://api.agentvalidator.dev"
 )
 
 result = validate(
@@ -226,6 +288,87 @@ result = validate(
 )
 ```
 
+### 🔐 Webhook Secret Management
+
+For enhanced security, generate a webhook secret for HMAC signature validation:
+
+```bash
+# Generate a new webhook secret
+agent-validator webhook --generate
+
+# Check webhook status
+agent-validator webhook --status
+
+# Show current webhook secret
+agent-validator webhook --show
+
+# Revoke webhook secret
+agent-validator webhook --revoke
+```
+
+**Security Features:**
+
+- ✅ **One-time display**: Webhook secrets are only shown once when generated
+- ✅ **Secure storage**: Secrets are stored encrypted in the database
+- ✅ **User isolation**: Each license key has its own webhook secret
+- ✅ **Revocation**: Users can revoke and regenerate secrets as needed
+
+#### Using HMAC Signatures
+
+Once you have a webhook secret, requests can include an HMAC signature:
+
+```python
+import hmac
+import hashlib
+
+# Create signature
+signature = hmac.new(
+    webhook_secret.encode(),
+    payload.encode(),
+    hashlib.sha256
+).hexdigest()
+
+# Include in request headers
+headers = {
+    "license-key": "your-license-key",
+    "x-signature": signature
+}
+```
+
+#### Security Notes
+
+- **One-time display**: Webhook secrets are only shown once when generated
+- **Secure storage**: Secrets are stored encrypted in the database
+- **User isolation**: Each license key has its own webhook secret
+- **Revocation**: Users can revoke and regenerate secrets as needed
+
+### 🌐 Web Dashboard
+
+Access your validation logs through a secure web dashboard:
+
+```bash
+# Configure your license key
+agent-validator config --set-license-key your-license-key
+
+# Open dashboard with secure local proxy
+agent-validator dashboard
+```
+
+This opens a local proxy server at `http://localhost:8080` that securely forwards requests to the cloud API with proper authentication headers. The dashboard shows:
+
+- Recent validation attempts
+- Success/failure rates
+- Performance metrics
+- Error details
+- Correlation IDs for debugging
+
+**Security Features:**
+
+- ✅ No credentials in URLs
+- ✅ Secure header authentication
+- ✅ User data isolation
+- ✅ Local proxy prevents credential exposure
+
 ---
 
 ## ⚙️ Configuration
@@ -233,9 +376,10 @@ result = validate(
 ### 🌍 Environment Variables
 
 ```bash
-export AGENT_VALIDATOR_API_KEY="your-api-key"
+export AGENT_VALIDATOR_LICENSE_KEY="your-license-key"
+export AGENT_VALIDATOR_WEBHOOK_SECRET="your-webhook-secret"
 export AGENT_VALIDATOR_LOG_TO_CLOUD="1"
-export AGENT_VALIDATOR_ENDPOINT="https://api.agentvalidator.com"
+export AGENT_VALIDATOR_ENDPOINT="https://api.agentvalidator.dev"
 export AGENT_VALIDATOR_MAX_OUTPUT_BYTES="131072"
 export AGENT_VALIDATOR_MAX_STR_LEN="8192"
 export AGENT_VALIDATOR_MAX_LIST_LEN="2048"
@@ -254,12 +398,40 @@ max_str_len = 8192
 max_list_len = 2048
 max_dict_keys = 512
 log_to_cloud = false
-cloud_endpoint = "https://api.agentvalidator.com"
+cloud_endpoint = "https://api.agentvalidator.dev"
 timeout_s = 20
 retries = 2
-api_key = "your-api-key"
+license_key = "your-license-key"
 webhook_secret = "your-webhook-secret"
 ```
+
+### 🔄 Configuration Precedence
+
+Configuration values are loaded in the following order (highest to lowest priority):
+
+1. **CLI Arguments** (highest priority)
+
+   ```bash
+   agent-validator test schema.json input.json --mode COERCE --timeout-s 30
+   ```
+
+2. **Environment Variables**
+
+   ```bash
+   export AGENT_VALIDATOR_MODE="COERCE"
+   export AGENT_VALIDATOR_TIMEOUT_S="30"
+   ```
+
+3. **Configuration File** (lowest priority)
+   ```toml
+   # ~/.agent_validator/config.toml
+   mode = "STRICT"
+   timeout_s = 20
+   ```
+
+**Example**: If you have `timeout_s = 20` in your config file, but set `export AGENT_VALIDATOR_TIMEOUT_S="30"`, the environment variable (30 seconds) will take precedence.
+
+**Note**: CLI arguments always override environment variables and config file settings.
 
 ---
 
@@ -384,7 +556,7 @@ from agent_validator import validate, Schema, Config
 
 config = Config(
     log_to_cloud=True,
-    api_key=os.getenv("AGENT_VALIDATOR_API_KEY")
+    license_key=os.getenv("AGENT_VALIDATOR_LICENSE_KEY")
 )
 
 schema = Schema({
@@ -417,14 +589,23 @@ result = validate(
 # Test validation
 agent-validator test <schema.json> <input.json> [--mode STRICT|COERCE]
 
-# View logs
+# View local logs
 agent-validator logs [-n <number>] [--clear]
+
+# View cloud logs
+agent-validator cloud-logs [-n <number>]
+
+# Open web dashboard
+agent-validator dashboard [--port <port>] [--url] [--open]
 
 # Generate correlation ID
 agent-validator id
 
 # Manage configuration
-agent-validator config [--show] [--set-api-key <key>] [--set-endpoint <url>] [--set-log-to-cloud <true|false>]
+agent-validator config [--show] [--show-secrets] [--set-license-key <key>] [--set-endpoint <url>] [--set-webhook-secret <secret>] [--set-log-to-cloud <true|false>]
+
+# Manage webhook secrets
+agent-validator webhook [--generate] [--status] [--show] [--revoke] [--force]
 ```
 
 ### 📊 Exit Codes
@@ -432,6 +613,22 @@ agent-validator config [--show] [--set-api-key <key>] [--set-endpoint <url>] [--
 - `0`: Success
 - `1`: General error
 - `2`: Validation failed
+
+### 🔒 Security Notes
+
+- **Configuration Display**: By default, sensitive values (license key, webhook secret) are masked as `***` when showing configuration
+- **Show Secrets**: Use `--show-secrets` flag to display actual values for debugging/verification
+- **Example**:
+
+  ```bash
+  # Default (masked)
+  agent-validator config --show
+  # Output: license_key: ***
+
+  # With secrets visible
+  agent-validator config --show --show-secrets
+  # Output: license_key: my-actual-key
+  ```
 
 ---
 
@@ -449,13 +646,13 @@ pip install -e ".[dev]"
 
 ```bash
 # Run all tests
-pytest
+python -m pytest tests/ -v
 
 # Run with coverage
 pytest --cov=agent_validator
 
 # Run property-based tests
-pytest tests/property/
+python -m pytest tests/property/ -v
 
 # Run type checking
 mypy agent_validator cli
@@ -464,6 +661,9 @@ mypy agent_validator cli
 ruff check .
 black --check .
 isort --check-only .
+
+# Run smoke tests (isolated environment)
+python smoke_tests/smoke_tests.py
 ```
 
 ### 🔧 Pre-commit Hooks
@@ -472,6 +672,35 @@ isort --check-only .
 pre-commit install
 pre-commit run --all-files
 ```
+
+### 🚀 Smoke Tests
+
+Smoke tests verify the complete user experience in an isolated environment:
+
+```bash
+# Run comprehensive smoke tests
+python smoke_tests/smoke_tests.py
+
+# With backend URL for cloud testing
+python smoke_tests/smoke_tests.py --backend-url http://localhost:9090
+```
+
+**What gets tested:**
+
+- ✅ Package installation in isolated environment
+- ✅ CLI command availability and functionality
+- ✅ Library imports and basic operations
+- ✅ Configuration management
+- ✅ Log generation and retrieval
+- ✅ Schema validation (strict and coerce modes)
+- ✅ Error handling and edge cases
+
+**Benefits:**
+
+- 🛡️ No pollution to your development environment
+- 🔄 Clean testing environment every time
+- 🧪 Tests real installation and usage scenarios
+- 🚀 Perfect for CI/CD integration
 
 ---
 
@@ -506,6 +735,12 @@ A: Sensitive data is automatically redacted before logging. You can also add cus
 **Q: Can I use this in production?**  
 A: Yes! The library is designed for production use with proper error handling, logging, and monitoring capabilities.
 
+**Q: How do I access the web dashboard securely?**  
+A: Use `agent-validator dashboard` which creates a secure local proxy server. Never put your license key in URLs - the CLI handles authentication securely via headers.
+
+**Q: How do I verify my license key is set correctly?**  
+A: Use `agent-validator config --show --show-secrets` to display the actual license key value. By default, sensitive values are masked as `***` for security.
+
 **Q: What's the performance impact?**  
 A: Minimal. Validation is fast, and logging is asynchronous. The main overhead comes from retry attempts when validation fails.
 
@@ -520,7 +755,7 @@ A: Currently only Python dict schemas are supported. JSONSchema support is plann
 - [ ] Pydantic model support
 - [ ] Custom validators per field
 - [ ] Schema composition and inheritance
-- [ ] Web dashboard for monitoring
+- [x] Web dashboard for monitoring
 - [ ] Alerting and notifications
 - [ ] Schema versioning
 - [ ] Performance metrics

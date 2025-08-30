@@ -37,8 +37,8 @@ def get_config() -> Config:
                 config.log_to_cloud = file_config["log_to_cloud"]
             if "cloud_endpoint" in file_config:
                 config.cloud_endpoint = file_config["cloud_endpoint"]
-            if "api_key" in file_config:
-                config.api_key = file_config["api_key"]
+            if "license_key" in file_config:
+                config.license_key = file_config["license_key"]
             if "webhook_secret" in file_config:
                 config.webhook_secret = file_config["webhook_secret"]
             if "timeout_s" in file_config:
@@ -80,8 +80,8 @@ def get_config() -> Config:
     if "AGENT_VALIDATOR_ENDPOINT" in os.environ:
         config.cloud_endpoint = os.environ["AGENT_VALIDATOR_ENDPOINT"]
     
-    if "AGENT_VALIDATOR_API_KEY" in os.environ:
-        config.api_key = os.environ["AGENT_VALIDATOR_API_KEY"]
+    if "AGENT_VALIDATOR_LICENSE_KEY" in os.environ:
+        config.license_key = os.environ["AGENT_VALIDATOR_LICENSE_KEY"]
     
     if "AGENT_VALIDATOR_WEBHOOK_SECRET" in os.environ:
         config.webhook_secret = os.environ["AGENT_VALIDATOR_WEBHOOK_SECRET"]
@@ -125,8 +125,8 @@ def save_config(config: Config) -> None:
     }
     
     # Only include sensitive fields if they're set
-    if config.api_key:
-        config_dict["api_key"] = config.api_key
+    if config.license_key:
+        config_dict["license_key"] = config.license_key
     if config.webhook_secret:
         config_dict["webhook_secret"] = config.webhook_secret
     
@@ -138,6 +138,8 @@ def save_config(config: Config) -> None:
         for key, value in config_dict.items():
             if isinstance(value, str):
                 f.write(f'{key} = "{value}"\n')
+            elif isinstance(value, bool):
+                f.write(f"{key} = {str(value).lower()}\n")
             else:
                 f.write(f"{key} = {value}\n")
 

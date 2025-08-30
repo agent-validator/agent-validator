@@ -157,7 +157,7 @@ def test_retry_function():
         "invalid json",
         schema,
         retry_fn=retry_fn,
-        retries=1,
+        retries=2,
         mode=ValidationMode.STRICT
     )
     
