@@ -70,7 +70,7 @@ agent-validator logs -n 20
 agent-validator id
 
 # Configure cloud logging
-agent-validator config --set-api-key YOUR_API_KEY
+agent-validator config --set-license-key YOUR_LICENSE_KEY
 agent-validator config --set-log-to-cloud true
 ```
 
@@ -214,7 +214,7 @@ from agent_validator import Config
 
 config = Config(
     log_to_cloud=True,
-    api_key="your-api-key",
+    license_key="your-license-key",
     cloud_endpoint="https://api.agentvalidator.dev"
 )
 
@@ -233,7 +233,7 @@ result = validate(
 ### 🌍 Environment Variables
 
 ```bash
-export AGENT_VALIDATOR_API_KEY="your-api-key"
+export AGENT_VALIDATOR_LICENSE_KEY="your-license-key"
 export AGENT_VALIDATOR_LOG_TO_CLOUD="1"
 export AGENT_VALIDATOR_ENDPOINT="https://api.agentvalidator.dev"
 export AGENT_VALIDATOR_MAX_OUTPUT_BYTES="131072"
@@ -257,7 +257,7 @@ log_to_cloud = false
 cloud_endpoint = "https://api.agentvalidator.dev"
 timeout_s = 20
 retries = 2
-api_key = "your-api-key"
+license_key = "your-license-key"
 webhook_secret = "your-webhook-secret"
 ```
 
@@ -384,7 +384,7 @@ from agent_validator import validate, Schema, Config
 
 config = Config(
     log_to_cloud=True,
-    api_key=os.getenv("AGENT_VALIDATOR_API_KEY")
+    license_key=os.getenv("AGENT_VALIDATOR_LICENSE_KEY")
 )
 
 schema = Schema({
@@ -424,7 +424,7 @@ agent-validator logs [-n <number>] [--clear]
 agent-validator id
 
 # Manage configuration
-agent-validator config [--show] [--set-api-key <key>] [--set-endpoint <url>] [--set-log-to-cloud <true|false>]
+agent-validator config [--show] [--set-license-key <key>] [--set-endpoint <url>] [--set-log-to-cloud <true|false>]
 ```
 
 ### 📊 Exit Codes

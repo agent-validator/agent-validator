@@ -4,18 +4,18 @@ import pytest
 from agent_validator.redact import redact_sensitive_data, Redactor, add_redaction_pattern
 
 
-def test_api_key_redaction():
-    """Test redaction of API keys."""
+def test_license_key_redaction():
+    """Test redaction of license keys."""
     data = {
         "config": {
-            "api_key": "sk-1234567890abcdef1234567890abcdef12345678",
+            "license_key": "license-1234567890abcdef1234567890abcdef12345678",
             "other": "value"
         }
     }
     
     redacted = redact_sensitive_data(data)
     
-    assert redacted["config"]["api_key"] == "[REDACTED]"
+    assert redacted["config"]["license_key"] == "[REDACTED]"
     assert redacted["config"]["other"] == "value"
 
 
@@ -117,11 +117,11 @@ def test_nested_structure_redaction():
         "users": [
             {
                 "email": "alice@example.com",
-                "api_key": "sk-alice1234567890abcdef"
+                "license_key": "license-alice1234567890abcdef"
             },
             {
                 "email": "bob@example.com",
-                "api_key": "sk-bob1234567890abcdef"
+                "license_key": "license-bob1234567890abcdef"
             }
         ]
     }
@@ -129,18 +129,18 @@ def test_nested_structure_redaction():
     redacted = redact_sensitive_data(data)
     
     assert redacted["users"][0]["email"] == "a***e@example.com"
-    assert redacted["users"][0]["api_key"] == "[REDACTED]"
+    assert redacted["users"][0]["license_key"] == "[REDACTED]"
     assert redacted["users"][1]["email"] == "b***b@example.com"
-    assert redacted["users"][1]["api_key"] == "[REDACTED]"
+    assert redacted["users"][1]["license_key"] == "[REDACTED]"
 
 
 def test_string_redaction():
     """Test redaction of sensitive data in strings."""
-    text = "My API key is sk-1234567890abcdef and my email is john@example.com"
+    text = "My license key is license-1234567890abcdef and my email is john@example.com"
     
     redacted = redact_sensitive_data(text)
     
-    assert "sk-1234567890abcdef" not in redacted
+    assert "license-1234567890abcdef" not in redacted
     assert "[REDACTED]" in redacted
     assert "j***n@example.com" in redacted
 
@@ -179,7 +179,29 @@ def test_redactor_with_custom_patterns():
 def test_max_depth_redaction():
     """Test redaction with max depth limit."""
     # Create deeply nested structure
-    data = {"level1": {"level2": {"level3": {"level4": {"level5": {"level6": {"level7": {"level8": {"level9": {"level10": {"level11": {"secret": "value"}}}}}}}}}}}
+    data = {
+        "level1": {
+            "level2": {
+                "level3": {
+                    "level4": {
+                        "level5": {
+                            "level6": {
+                                "level7": {
+                                    "level8": {
+                                        "level9": {
+                                            "level10": {
+                                                "level11": {"secret": "value"}
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     
     redacted = redact_sensitive_data(data, max_depth=5)
     

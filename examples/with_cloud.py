@@ -23,7 +23,7 @@ def main():
     # Configure for cloud logging
     config = Config(
         log_to_cloud=True,
-        api_key=os.getenv("AGENT_VALIDATOR_API_KEY"),
+        license_key=os.getenv("AGENT_VALIDATOR_LICENSE_KEY"),
         cloud_endpoint=os.getenv("AGENT_VALIDATOR_ENDPOINT", "https://api.agentvalidator.dev")
     )
     

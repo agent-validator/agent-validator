@@ -192,18 +192,18 @@ def test_config_command_show(mock_save_config, mock_get_config, runner):
 
 @patch("cli.main.get_config")
 @patch("cli.main.save_config")
-def test_config_command_set_api_key(mock_save_config, mock_get_config, runner):
-    """Test the config command setting API key."""
+def test_config_command_set_license_key(mock_save_config, mock_get_config, runner):
+    """Test the config command setting license key."""
     from agent_validator.typing_ import Config
     
     config = Config()
     mock_get_config.return_value = config
     
-    result = runner.invoke(app, ["config", "--set-api-key", "test-key"])
+    result = runner.invoke(app, ["config", "--set-license-key", "test-key"])
     
     assert result.exit_code == 0
-    assert "API key updated." in result.stdout
-    assert config.api_key == "test-key"
+    assert "License key updated." in result.stdout
+    assert config.license_key == "test-key"
     mock_save_config.assert_called_once_with(config)
 
 

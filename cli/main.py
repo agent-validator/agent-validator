@@ -91,7 +91,7 @@ def id() -> None:
 @app.command()
 def config(
     show: bool = typer.Option(False, "--show", help="Show current configuration"),
-    set_api_key: Optional[str] = typer.Option(None, "--set-api-key", help="Set API key"),
+    set_license_key: Optional[str] = typer.Option(None, "--set-license-key", help="Set license key"),
     set_endpoint: Optional[str] = typer.Option(
         None, "--set-endpoint", help="Set cloud endpoint"
     ),
@@ -112,13 +112,13 @@ def config(
         typer.echo(f"  cloud_endpoint: {config.cloud_endpoint}")
         typer.echo(f"  timeout_s: {config.timeout_s}")
         typer.echo(f"  retries: {config.retries}")
-        typer.echo(f"  api_key: {'***' if config.api_key else 'not set'}")
+        typer.echo(f"  license_key: {'***' if config.license_key else 'not set'}")
         typer.echo(f"  webhook_secret: {'***' if config.webhook_secret else 'not set'}")
         return
     
-    if set_api_key is not None:
-        config.api_key = set_api_key
-        typer.echo("API key updated.")
+    if set_license_key is not None:
+        config.license_key = set_license_key
+        typer.echo("License key updated.")
     
     if set_endpoint is not None:
         config.cloud_endpoint = set_endpoint

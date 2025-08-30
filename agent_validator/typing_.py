@@ -20,7 +20,7 @@ class Config:
     max_dict_keys: int = 512
     log_to_cloud: bool = False
     cloud_endpoint: str = "https://api.agentvalidator.dev"
-    api_key: Optional[str] = None
+    license_key: Optional[str] = None
     webhook_secret: Optional[str] = None
     timeout_s: int = 20
     retries: int = 2
