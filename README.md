@@ -560,13 +560,13 @@ pip install -e ".[dev]"
 
 ```bash
 # Run all tests
-pytest
+python -m pytest tests/ -v
 
 # Run with coverage
 pytest --cov=agent_validator
 
 # Run property-based tests
-pytest tests/property/
+python -m pytest tests/property/ -v
 
 # Run type checking
 mypy agent_validator cli
