@@ -405,6 +405,34 @@ license_key = "your-license-key"
 webhook_secret = "your-webhook-secret"
 ```
 
+### 🔄 Configuration Precedence
+
+Configuration values are loaded in the following order (highest to lowest priority):
+
+1. **CLI Arguments** (highest priority)
+
+   ```bash
+   agent-validator test schema.json input.json --mode COERCE --timeout-s 30
+   ```
+
+2. **Environment Variables**
+
+   ```bash
+   export AGENT_VALIDATOR_MODE="COERCE"
+   export AGENT_VALIDATOR_TIMEOUT_S="30"
+   ```
+
+3. **Configuration File** (lowest priority)
+   ```toml
+   # ~/.agent_validator/config.toml
+   mode = "STRICT"
+   timeout_s = 20
+   ```
+
+**Example**: If you have `timeout_s = 20` in your config file, but set `export AGENT_VALIDATOR_TIMEOUT_S="30"`, the environment variable (30 seconds) will take precedence.
+
+**Note**: CLI arguments always override environment variables and config file settings.
+
 ---
 
 ## 🔒 Security & Privacy
