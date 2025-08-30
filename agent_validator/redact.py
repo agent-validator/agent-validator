@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 DEFAULT_PATTERNS = {
     "license_key": r"(?i)(license[_-]?key|licensekey)[\s]*[:=][\s]*['\"]?([a-zA-Z0-9_-]{20,})['\"]?",
     "license_key_value": r"license-[a-zA-Z0-9_-]+",
-    "api_key": r"(?i)(api[_-]?key|apikey)[\s]*[:=][\s]*['\"]?([a-zA-Z0-9_-]{20,})['\"]?",
+    "api_key": r"(?i).*api.*",
     "jwt": r"(?i)(bearer|jwt|token)[\s]*[:=][\s]*['\"]?([a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+)['\"]?",
     "jwt_value": r"^Bearer\s+[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$",
     "email": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",

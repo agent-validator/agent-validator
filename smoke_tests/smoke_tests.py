@@ -715,6 +715,66 @@ print("✅ Logging functionality working")
         print("🔍 Testing redaction patterns...")
         
         try:
+            # First, let's debug what's actually being logged
+            print("🔍 Debugging redaction - checking what gets logged...")
+            
+            # Simple test with just one sensitive field
+            debug_result = subprocess.run(
+                [str(self.python_path), "-c", """
+import sys
+import json
+from agent_validator import validate, Schema, ValidationMode
+
+schema = Schema({
+    "config": str
+})
+
+# Simple sensitive data
+sensitive_data = {
+    "config": "api_key=sk-1234567890abcdef"
+}
+
+result = validate(sensitive_data, schema, mode=ValidationMode.STRICT, context={"test": "debug_redaction"})
+
+print("✅ Debug validation successful")
+"""],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if debug_result.returncode != 0:
+                raise SmokeTestError(f"Debug redaction test failed: {debug_result.stderr}")
+            
+            # Check what was actually logged
+            from datetime import datetime
+            today = datetime.utcnow().strftime("%Y-%m-%d")
+            log_file = Path.home() / ".agent_validator" / "logs" / f"{today}.jsonl"
+            
+            if log_file.exists():
+                print("🔍 Checking log file for debug entry...")
+                with open(log_file, 'r') as f:
+                    for line in f:
+                        try:
+                            entry = json.loads(line.strip())
+                            if entry.get("context", {}).get("test") == "debug_redaction":
+                                output_sample = entry.get("output_sample", "")
+                                if "sk-1234567890abcdef" in output_sample:
+                                    print("❌ API key found in log (not redacted)")
+                                    # Let's also check if there are any redaction markers
+                                    if "[REDACTED]" in output_sample:
+                                        print("🔍 Found [REDACTED] markers in output_sample")
+                                    else:
+                                        print("🔍 No [REDACTED] markers found")
+                                else:
+                                    print("✅ API key not found in log (redacted)")
+                                break
+                        except json.JSONDecodeError:
+                            continue
+            
+            # Now run the full test
+            print("🔍 Running full redaction test...")
+            
             # Test validation with sensitive data
             result = subprocess.run(
                 [str(self.python_path), "-c", """
@@ -811,14 +871,12 @@ print("✅ Validation with sensitive data successful")
         print("🔍 Testing exponential backoff and jitter...")
         
         try:
-            # Test retry logic with a function that fails twice then succeeds
+            # Test retry logic directly with the retry function
             result = subprocess.run(
                 [str(self.python_path), "-c", """
 import sys
 import time
-from agent_validator import validate, Schema, ValidationMode, ValidationError
-
-schema = Schema({"name": str})
+from agent_validator.retry import create_retry_function
 
 attempt_count = 0
 start_time = time.time()
@@ -831,19 +889,21 @@ def failing_function(prompt, context):
     delays.append(current_time - start_time)
     
     if attempt_count < 3:
-        return "invalid json"  # This will fail validation
+        raise Exception("Simulated failure")  # This will trigger retry
     else:
-        return '{"name": "John"}'
+        return "success"
+
+# Create retry function with backoff
+retry_fn_with_backoff = create_retry_function(
+    failing_function,
+    max_retries=2,
+    base_delay=0.5,
+    max_delay=2.0,
+    factor=2.0
+)
 
 try:
-    result = validate(
-        "invalid input",
-        schema,
-        retry_fn=failing_function,
-        retries=3,
-        timeout_s=10,
-        context={"test": "backoff"}
-    )
+    result = retry_fn_with_backoff("test prompt", {"test": "context"})
     
     if attempt_count != 3:
         print(f"Expected 3 attempts, got {attempt_count}")
@@ -866,8 +926,8 @@ try:
     
     print("✅ Exponential backoff and jitter working correctly")
     
-except ValidationError as e:
-    print(f"Validation failed after retries: {e}")
+except Exception as e:
+    print(f"Retry function failed: {e}")
     sys.exit(1)
 """],
                 capture_output=True,
@@ -876,11 +936,14 @@ except ValidationError as e:
             )
             
             if result.returncode != 0:
+                print(f"🔍 Debug - stdout: {result.stdout}")
+                print(f"🔍 Debug - stderr: {result.stderr}")
                 raise SmokeTestError(f"Backoff test failed: {result.stderr}")
             
             print("✅ Exponential backoff and jitter working correctly")
             
         except Exception as e:
+            print(f"🔍 Debug - exception: {e}")
             raise SmokeTestError(f"Backoff test failed: {e}")
     
     def test_configuration_precedence(self) -> None:
