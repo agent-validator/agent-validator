@@ -104,10 +104,10 @@ class AgentValidatorSmokeTester:
         self.test_input_file = self.temp_dir / "test_input.json"
         self.test_invalid_input_file = self.temp_dir / "test_invalid_input.json"
         
-        # Valid schema
+        # Valid schema (JSON-compatible format)
         schema = {
             "name": "string",
-            "age": "integer",
+            "age": "integer", 
             "email": "string",
             "is_active": "boolean",
             "tags": ["string"],

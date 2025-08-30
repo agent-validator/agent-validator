@@ -4,7 +4,7 @@ import json
 import sys
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 import typer
 
@@ -22,6 +22,39 @@ def parse_validation_mode(value: str) -> ValidationMode:
         return ValidationMode.COERCE
     else:
         raise ValueError(f"Invalid validation mode: {value}. Must be 'strict' or 'coerce'")
+
+
+def convert_string_schema_to_types(schema_data: Any) -> Any:
+    """Convert string-based schema to Python types."""
+    if isinstance(schema_data, dict):
+        converted = {}
+        for key, value in schema_data.items():
+            converted[key] = convert_string_schema_to_types(value)
+        return converted
+    elif isinstance(schema_data, list):
+        if len(schema_data) == 1:
+            # List schema: ["string"] -> [str]
+            return [convert_string_schema_to_types(schema_data[0])]
+        else:
+            return [convert_string_schema_to_types(item) for item in schema_data]
+    elif isinstance(schema_data, str):
+        # Convert string type names to Python types
+        type_map = {
+            "string": str,
+            "integer": int,
+            "int": int,
+            "float": float,
+            "number": float,
+            "boolean": bool,
+            "bool": bool,
+            "list": list,
+            "array": list,
+            "dict": dict,
+            "object": dict,
+        }
+        return type_map.get(schema_data.lower(), schema_data)
+    else:
+        return schema_data
 
 
 app = typer.Typer(
@@ -77,7 +110,15 @@ def test(
         # Load schema
         with open(schema_path, "r") as f:
             schema_data = json.load(f)
-        schema = Schema.from_dict(schema_data)
+        
+        # Handle both direct schema and wrapped schema formats
+        if "schema" in schema_data:
+            # Wrapped format: {"schema": {...}}
+            schema = Schema.from_dict(schema_data)
+        else:
+            # Direct format: {...} - convert string types to Python types
+            converted_schema = convert_string_schema_to_types(schema_data)
+            schema = Schema(converted_schema)
         
         # Load input
         with open(input_path, "r") as f:

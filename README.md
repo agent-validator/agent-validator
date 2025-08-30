@@ -111,6 +111,41 @@ schema = Schema({
 - **Objects**: `dict` for nested objects
 - **Optional**: `None` for optional fields
 
+### 📄 Schema File Formats
+
+When using the CLI with JSON files, you can use either format:
+
+#### **Direct Schema Format** (Recommended)
+
+```json
+{
+  "name": "string",
+  "age": "integer",
+  "email": "string",
+  "is_active": "boolean",
+  "tags": ["string"],
+  "metadata": {
+    "source": "string",
+    "version": "string"
+  }
+}
+```
+
+#### **Wrapped Schema Format**
+
+```json
+{
+  "schema": {
+    "name": "string",
+    "age": "integer",
+    "email": "string",
+    "is_active": "boolean"
+  }
+}
+```
+
+**Supported string types**: `string`, `integer`, `int`, `float`, `number`, `boolean`, `bool`, `list`, `array`, `dict`, `object`
+
 ---
 
 ## 🔄 Validation Modes
