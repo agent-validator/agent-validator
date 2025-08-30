@@ -20,6 +20,7 @@ import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+SMOKE_TEST_OUTPUT_LINES = 60
 
 class SmokeTestError(Exception):
     """Custom exception for smoke test failures."""
@@ -29,13 +30,18 @@ class SmokeTestError(Exception):
 class AgentValidatorSmokeTester:
     """Comprehensive smoke tester with isolated environment."""
     
-    def __init__(self):
-        """Initialize the smoke tester."""
+    def __init__(self, backend_url: Optional[str] = "http://localhost:9090"):
+        """Initialize the smoke tester.
+        
+        Args:
+            backend_url: Optional backend URL for cloud testing (default: http://localhost:9090)
+        """
         self.temp_dir = None
         self.venv_path = None
         self.python_path = None
         self.pip_path = None
         self.cli_path = None
+        self.backend_url = backend_url
         
         # Test files (will be created in temp dir)
         self.test_schema_file = None
@@ -70,6 +76,10 @@ class AgentValidatorSmokeTester:
         
         # Create test files
         self._create_test_files()
+        
+        # Configure backend URL if provided
+        if self.backend_url:
+            self._configure_backend_url()
         
     def _install_package(self):
         """Install the package in the isolated environment."""
@@ -148,6 +158,30 @@ class AgentValidatorSmokeTester:
             json.dump(invalid_input, f, indent=2)
 
         print("✅ Test files created successfully")
+    
+    def _configure_backend_url(self):
+        """Configure the backend URL in the isolated environment."""
+        if not self.backend_url:
+            return
+            
+        print(f"🔍 Configuring backend URL: {self.backend_url}")
+        
+        try:
+            # Set the backend URL using the CLI config command
+            result = subprocess.run(
+                [str(self.cli_path), "config", "--set-endpoint", self.backend_url],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode != 0:
+                print(f"⚠️  Warning: Failed to configure backend URL: {result.stderr}")
+            else:
+                print("✅ Backend URL configured successfully")
+                
+        except Exception as e:
+            print(f"⚠️  Warning: Failed to configure backend URL: {e}")
     
     def _run_cli_command(self, args: list, expect_success: bool = True) -> str:
         """Run a CLI command in isolated environment and return output."""
@@ -294,6 +328,9 @@ class AgentValidatorSmokeTester:
         # This might fail if no license key or server not running, which is expected
         try:
             output = self._run_cli_command(["cloud-logs", "-n", "5"])
+            if not self._string_in_output(output, "No logs found") and not self._string_in_output(output, "Timestamp") and not self._string_in_output(output, "Status"):
+                raise SmokeTestError("Cloud logs command output unexpected")
+
             print("✅ CLI cloud logs working (server available)")
         except SmokeTestError as e:
             if self._string_in_output(str(e), "No license key configured") or self._string_in_output(str(e), "Cannot connect"):
@@ -619,6 +656,35 @@ print("✅ Logging functionality working")
         except Exception as e:
             raise SmokeTestError(f"Logging test failed: {e}")
     
+    def test_cloud_functionality(self) -> None:
+        """Test cloud functionality with configured backend URL."""
+        print("🔍 Testing cloud functionality...")
+        
+        # Set a test license key for cloud testing
+        test_license_key = "license-smoke-test-key"
+        
+        try:
+            # Configure license key
+            self._run_cli_command(["config", "--set-license-key", test_license_key])
+            
+            # Test cloud logs command
+            output = self._run_cli_command(["cloud-logs", "-n", "5"])
+
+            if self._string_in_output(output, "Cannot connect to"):
+                raise SmokeTestError("Cannot connect to backend server " + self.backend_url)
+            
+            # Should show table format or "No logs found"
+            if not self._string_in_output(output, "No logs found") and not self._string_in_output(output, "Timestamp"):
+                raise SmokeTestError("Cloud logs output unexpected")
+            
+            print("✅ Cloud functionality working")
+            
+        except SmokeTestError as e:
+            if self._string_in_output(str(e), "Cannot connect") or self._string_in_output(str(e), "Failed to fetch"):
+                print("⚠️  Cloud functionality not available (backend may not be running)")
+            else:
+                raise e
+    
     def cleanup(self):
         """Clean up temporary environment."""
         if self.temp_dir and self.temp_dir.exists():
@@ -633,7 +699,7 @@ print("✅ Logging functionality working")
         """Run all smoke tests in isolated environment."""
         print("🚀 Starting comprehensive agent-validator smoke tests")
         print("🔒 Tests will run in isolated environment")
-        print("=" * 60)
+        print("=" * SMOKE_TEST_OUTPUT_LINES)
         
         try:
             # Setup isolated environment
@@ -646,6 +712,11 @@ print("✅ Logging functionality working")
             self.test_cli_validation_success()
             self.test_cli_validation_failure()
             self.test_cli_logs()
+            
+            # Test cloud functionality if backend URL is provided
+            if self.backend_url:
+                self.test_cloud_functionality()
+
             self.test_cli_cloud_logs()
             
             # Test library functionality
@@ -656,16 +727,16 @@ print("✅ Logging functionality working")
             self.test_library_retry_logic()
             self.test_library_logging()
             
-            print("=" * 60)
+            print("=" * SMOKE_TEST_OUTPUT_LINES)
             print("🎉 All smoke tests passed!")
             print("🔒 Tests ran in isolated environment - no pollution to your dev environment")
             
         except SmokeTestError as e:
-            print("=" * 60)
+            print("=" * SMOKE_TEST_OUTPUT_LINES)
             print(f"❌ Smoke test failed: {e}")
             sys.exit(1)
         except Exception as e:
-            print("=" * 60)
+            print("=" * SMOKE_TEST_OUTPUT_LINES)
             print(f"💥 Unexpected error during smoke tests: {e}")
             sys.exit(1)
         finally:
@@ -674,11 +745,24 @@ print("✅ Logging functionality working")
 
 def main():
     """Main entry point for smoke tests."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Run agent-validator smoke tests")
+    parser.add_argument(
+        "--backend-url",
+        help="Backend URL for cloud testing (e.g., http://localhost:9090)",
+        default="http://localhost:9090"
+    )
+    
+    args = parser.parse_args()
+    
     print("🔧 Comprehensive Agent Validator Smoke Tests")
     print("🔧 This creates an isolated environment and tests real end-to-end usage")
     
+    print(f"🔧 Backend URL: {args.backend_url}")
+    
     # Create tester and run tests
-    tester = AgentValidatorSmokeTester()
+    tester = AgentValidatorSmokeTester(backend_url=args.backend_url)
     tester.run_all_tests()
 
 

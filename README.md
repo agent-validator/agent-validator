@@ -257,12 +257,12 @@ All validation attempts are logged to `~/.agent_validator/logs/YYYY-MM-DD.jsonl`
 When viewing logs with `agent-validator logs`, logs are displayed in a clear table format:
 
 ```bash
-┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┐
-│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │
-├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┤
-│ 2025-08-30 18:40:00                 │      ✗ │        none │  strict │        1 │         0ms │
-│ 2025-08-30 18:40:00                 │      ✓ │        none │  coerce │        1 │         0ms │
-└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┘
+┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┬─────────┬─────────┐
+│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │ Errors  │ Size    │
+├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┼─────────┼─────────┤
+│ 2025-08-30 18:40:00                 │      ✗ │        none │  strict │        1 │         0ms │       2 │    45B  │
+│ 2025-08-30 18:40:00                 │      ✓ │        none │  coerce │        1 │         0ms │       0 │    45B  │
+└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┴─────────┴─────────┘
 ```
 
 Correlation IDs are truncated for readability and show `[none]` when not set.
@@ -594,6 +594,9 @@ Smoke tests verify the complete user experience in an isolated environment:
 ```bash
 # Run comprehensive smoke tests
 python smoke_tests/smoke_tests.py
+
+# With backend URL for cloud testing
+python smoke_tests/smoke_tests.py --backend-url http://localhost:9090
 ```
 
 **What gets tested:**
