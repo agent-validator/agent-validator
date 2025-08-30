@@ -81,9 +81,9 @@ def logs(
         return
     
     # Print table header
-    typer.echo("┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┐")
-    typer.echo("│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │")
-    typer.echo("├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┤")
+    typer.echo("┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┬─────────┬─────────┐")
+    typer.echo("│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │ Errors  │ Size    │")
+    typer.echo("├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┼─────────┼─────────┤")
     
     for entry in entries:
         ts = entry.get("ts", "unknown")
@@ -112,11 +112,25 @@ def logs(
         else:
             formatted_ts = ts
         
+        # Get additional info
+        errors = entry.get("errors", [])
+        error_count = len(errors) if errors else 0
+        
+        # Calculate output size from output_sample
+        output_sample = entry.get("output_sample", "")
+        output_size = len(output_sample.encode('utf-8')) if output_sample else 0
+        
+        # Format size (show KB if > 1KB)
+        if output_size > 1024:
+            size_display = f"{output_size // 1024}KB"
+        else:
+            size_display = f"{output_size}B"
+        
         # Print table row
-        typer.echo(f"│ {formatted_ts:<35} │ {valid:>6} │ {display_id:>11} │ {mode:>7} │ {attempts:>8} │ {duration_ms:>9}ms │")
+        typer.echo(f"│ {formatted_ts:<35} │ {valid:>6} │ {display_id:>11} │ {mode:>7} │ {attempts:>8} │ {duration_ms:>9}ms │ {error_count:>7} │ {size_display:>7} │")
     
     # Print table footer
-    typer.echo("└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┘")
+    typer.echo("└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┴─────────┴─────────┘")
 
 
 @app.command()
@@ -246,9 +260,9 @@ def cloud_logs(
             return
         
         # Print table header
-        typer.echo("┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┐")
-        typer.echo("│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │")
-        typer.echo("├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┤")
+        typer.echo("┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┬─────────┬─────────┐")
+        typer.echo("│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │ Errors  │ Size    │")
+        typer.echo("├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┼─────────┼─────────┤")
         
         for log in logs:
             ts = log.get("ts", "unknown")
@@ -277,11 +291,25 @@ def cloud_logs(
             else:
                 formatted_ts = ts
             
+            # Get additional info
+            errors = log.get("errors", [])
+            error_count = len(errors) if errors else 0
+            
+            # Calculate output size from output_sample
+            output_sample = log.get("output_sample", "")
+            output_size = len(output_sample.encode('utf-8')) if output_sample else 0
+            
+            # Format size (show KB if > 1KB)
+            if output_size > 1024:
+                size_display = f"{output_size // 1024}KB"
+            else:
+                size_display = f"{output_size}B"
+            
             # Print table row
-            typer.echo(f"│ {formatted_ts:<35} │ {valid:>6} │ {display_id:>11} │ {mode:>7} │ {attempts:>8} │ {duration_ms:>9}ms │")
+            typer.echo(f"│ {formatted_ts:<35} │ {valid:>6} │ {display_id:>11} │ {mode:>7} │ {attempts:>8} │ {duration_ms:>9}ms │ {error_count:>7} │ {size_display:>7} │")
         
         # Print table footer
-        typer.echo("└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┘")
+        typer.echo("└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┴─────────┴─────────┘")
             
     except requests.exceptions.ConnectionError:
         typer.echo(f"❌ Cannot connect to {config.cloud_endpoint}. Is the server running?")
