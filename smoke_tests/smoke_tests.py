@@ -76,12 +76,12 @@ class AgentValidatorSmokeTester:
         print("🔍 Installing agent-validator in isolated environment...")
         
         # Get the parent directory (where pyproject.toml is)
-        parent_dir = Path.cwd().parent
+        parent_dir = Path(__file__).parent.parent
         
         try:
             # Install in editable mode with dev dependencies
             result = subprocess.run(
-                [str(self.pip_path), "install", "-e", ".[dev]", str(parent_dir)],
+                [str(self.pip_path), "install", "-e", f"{parent_dir}[dev]"],
                 capture_output=True,
                 text=True,
                 timeout=120
