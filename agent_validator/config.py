@@ -138,6 +138,8 @@ def save_config(config: Config) -> None:
         for key, value in config_dict.items():
             if isinstance(value, str):
                 f.write(f'{key} = "{value}"\n')
+            elif isinstance(value, bool):
+                f.write(f"{key} = {str(value).lower()}\n")
             else:
                 f.write(f"{key} = {value}\n")
 
