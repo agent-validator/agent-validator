@@ -79,9 +79,9 @@ class AgentValidatorSmokeTester:
         parent_dir = Path(__file__).parent.parent
         
         try:
-            # Install in editable mode with dev dependencies
+            # Install in editable mode with dev dependencies using python -m pip
             result = subprocess.run(
-                [str(self.pip_path), "install", "-e", f"{parent_dir}[dev]"],
+                [str(self.python_path), "-m", "pip", "install", "-e", f"{parent_dir}[dev]"],
                 capture_output=True,
                 text=True,
                 timeout=120
