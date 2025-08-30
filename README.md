@@ -288,6 +288,60 @@ result = validate(
 )
 ```
 
+### 🔐 Webhook Secret Management
+
+For enhanced security, generate a webhook secret for HMAC signature validation:
+
+```bash
+# Generate a new webhook secret
+agent-validator webhook --generate
+
+# Check webhook status
+agent-validator webhook --status
+
+# Show current webhook secret
+agent-validator webhook --show
+
+# Revoke webhook secret
+agent-validator webhook --revoke
+```
+
+**Security Features:**
+
+- ✅ **One-time display**: Webhook secrets are only shown once when generated
+- ✅ **Secure storage**: Secrets are stored encrypted in the database
+- ✅ **User isolation**: Each license key has its own webhook secret
+- ✅ **Revocation**: Users can revoke and regenerate secrets as needed
+
+#### Using HMAC Signatures
+
+Once you have a webhook secret, requests can include an HMAC signature:
+
+```python
+import hmac
+import hashlib
+
+# Create signature
+signature = hmac.new(
+    webhook_secret.encode(),
+    payload.encode(),
+    hashlib.sha256
+).hexdigest()
+
+# Include in request headers
+headers = {
+    "license-key": "your-license-key",
+    "x-signature": signature
+}
+```
+
+#### Security Notes
+
+- **One-time display**: Webhook secrets are only shown once when generated
+- **Secure storage**: Secrets are stored encrypted in the database
+- **User isolation**: Each license key has its own webhook secret
+- **Revocation**: Users can revoke and regenerate secrets as needed
+
 ### 🌐 Web Dashboard
 
 Access your validation logs through a secure web dashboard:
@@ -323,6 +377,7 @@ This opens a local proxy server at `http://localhost:8080` that securely forward
 
 ```bash
 export AGENT_VALIDATOR_LICENSE_KEY="your-license-key"
+export AGENT_VALIDATOR_WEBHOOK_SECRET="your-webhook-secret"
 export AGENT_VALIDATOR_LOG_TO_CLOUD="1"
 export AGENT_VALIDATOR_ENDPOINT="https://api.agentvalidator.dev"
 export AGENT_VALIDATOR_MAX_OUTPUT_BYTES="131072"
@@ -519,7 +574,10 @@ agent-validator dashboard [--port <port>] [--url] [--open]
 agent-validator id
 
 # Manage configuration
-agent-validator config [--show] [--show-secrets] [--set-license-key <key>] [--set-endpoint <url>] [--set-log-to-cloud <true|false>]
+agent-validator config [--show] [--show-secrets] [--set-license-key <key>] [--set-endpoint <url>] [--set-webhook-secret <secret>] [--set-log-to-cloud <true|false>]
+
+# Manage webhook secrets
+agent-validator webhook [--generate] [--status] [--show] [--revoke] [--force]
 ```
 
 ### 📊 Exit Codes

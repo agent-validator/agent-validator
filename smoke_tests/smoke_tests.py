@@ -1096,6 +1096,110 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
         except Exception as e:
             raise SmokeTestError(f"Cloud failsafe test failed: {e}")
     
+    def test_webhook_management(self) -> None:
+        """Test webhook secret management functionality."""
+        print("🔍 Testing webhook management...")
+        
+        try:
+            # Test webhook status (should be no webhook initially)
+            result = subprocess.run(
+                [str(self.python_path), "-m", "agent_validator.cli.main", "webhook", "--status"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            # Status should work even if no webhook exists
+            if result.returncode != 0:
+                raise SmokeTestError(f"Webhook status check failed: {result.stderr}")
+            
+            # Test webhook generation
+            result = subprocess.run(
+                [str(self.python_path), "-m", "agent_validator.cli.main", "webhook", "--generate"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode != 0:
+                raise SmokeTestError(f"Webhook generation failed: {result.stderr}")
+            
+            # Check that webhook secret was generated and auto-configured
+            if "Webhook secret generated successfully" not in result.stdout:
+                raise SmokeTestError("Webhook generation output unexpected")
+            
+            if "automatically configured" not in result.stdout:
+                raise SmokeTestError("Webhook secret was not auto-configured")
+            
+            print("✅ Webhook secret generated and auto-configured")
+            
+            # Test webhook show (should display the secret)
+            result = subprocess.run(
+                [str(self.python_path), "-m", "agent_validator.cli.main", "webhook", "--show"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode != 0:
+                raise SmokeTestError(f"Webhook show failed: {result.stderr}")
+            
+            if "Current webhook secret:" not in result.stdout:
+                raise SmokeTestError("Webhook show does not display the secret")
+            
+            print("✅ Webhook show command working")
+            
+            # Test webhook status (should now have webhook)
+            result = subprocess.run(
+                [str(self.python_path), "-m", "agent_validator.cli.main", "webhook", "--status"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode != 0:
+                raise SmokeTestError(f"Webhook status check failed: {result.stderr}")
+            
+            if "Webhook secret is configured" not in result.stdout:
+                raise SmokeTestError("Webhook status does not show secret is configured")
+            
+            print("✅ Webhook status correctly shows secret exists")
+            
+            # Test webhook revocation
+            result = subprocess.run(
+                [str(self.python_path), "-m", "agent_validator.cli.main", "webhook", "--revoke"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode != 0:
+                raise SmokeTestError(f"Webhook revocation failed: {result.stderr}")
+            
+            if "Webhook secret revoked successfully" not in result.stdout:
+                raise SmokeTestError("Webhook revocation output unexpected")
+            
+            print("✅ Webhook secret revoked successfully")
+            
+            # Test webhook status (should no longer have webhook)
+            result = subprocess.run(
+                [str(self.python_path), "-m", "agent_validator.cli.main", "webhook", "--status"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode != 0:
+                raise SmokeTestError(f"Webhook status check failed: {result.stderr}")
+            
+            if "No webhook secret configured" not in result.stdout:
+                raise SmokeTestError("Webhook status still shows secret after revocation")
+            
+            print("✅ Webhook status correctly shows no secret after revocation")
+            
+        except Exception as e:
+            raise SmokeTestError(f"Webhook management test failed: {e}")
+    
     def test_cloud_functionality(self) -> None:
         """Test cloud functionality with configured backend URL."""
         print("🔍 Testing cloud functionality...")
@@ -1176,6 +1280,7 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
             self.test_configuration_precedence()
             self.test_cloud_redaction()
             self.test_cloud_failsafe()
+        self.test_webhook_management()
             
             print("=" * SMOKE_TEST_OUTPUT_LINES)
             print("🎉 All smoke tests passed!")

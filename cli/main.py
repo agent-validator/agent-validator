@@ -192,6 +192,7 @@ def config(
     set_endpoint: Optional[str] = typer.Option(
         None, "--set-endpoint", help="Set cloud endpoint"
     ),
+    set_webhook_secret: Optional[str] = typer.Option(None, "--set-webhook-secret", help="Set webhook secret"),
     set_log_to_cloud: Optional[bool] = typer.Option(
         None, "--set-log-to-cloud", help="Enable/disable cloud logging", is_flag=True
     ),
@@ -227,12 +228,135 @@ def config(
         config.cloud_endpoint = set_endpoint
         typer.echo("Cloud endpoint updated.")
     
+    if set_webhook_secret is not None:
+        config.webhook_secret = set_webhook_secret
+        typer.echo("Webhook secret updated.")
+    
     if set_log_to_cloud is not None:
         config.log_to_cloud = set_log_to_cloud
         typer.echo(f"Cloud logging {'enabled' if set_log_to_cloud else 'disabled'}.")
     
     # Save configuration
     save_config(config)
+
+
+@app.command()
+def webhook(
+    generate: bool = typer.Option(False, "--generate", "-g", help="Generate a new webhook secret"),
+    status: bool = typer.Option(False, "--status", "-s", help="Check webhook secret status"),
+    show: bool = typer.Option(False, "--show", help="Show the current webhook secret"),
+    revoke: bool = typer.Option(False, "--revoke", "-r", help="Revoke current webhook secret"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force generation even if secret exists"),
+) -> None:
+    """Manage webhook secrets for HMAC signature validation."""
+    config = get_config()
+    
+    if not config.license_key:
+        typer.echo("❌ No license key configured. Run 'agent-validator config --set-license-key <key>' first.")
+        return
+    
+    try:
+        import requests
+        
+        if generate:
+            # Generate new webhook secret
+            url = f"{config.cloud_endpoint}/webhooks/generate"
+            params = {"force": force} if force else {}
+            
+            response = requests.post(
+                url,
+                headers={"license-key": config.license_key},
+                params=params,
+                timeout=10
+            )
+            
+            if response.status_code == 409 and not force:
+                typer.echo("⚠️  Webhook secret already exists.")
+                typer.echo("   Use --force to generate a new one (this will invalidate the old secret).")
+                return
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            typer.echo("🔐 Webhook secret generated successfully!")
+            typer.echo(f"   Secret: {data['webhook_secret']}")
+            typer.echo("")
+            typer.echo("⚠️  WARNING: This is the only time you will see this secret!")
+            typer.echo("")
+            
+            # Check if webhook secret already exists locally
+            if config.webhook_secret:
+                typer.echo("⚠️  You already have a webhook secret configured locally.")
+                typer.echo("   This will overwrite your existing webhook secret.")
+                typer.echo("   Your old secret will no longer work for HMAC validation.")
+                
+                # Ask for confirmation
+                confirm = typer.confirm("Do you want to continue and overwrite the existing secret?")
+                if not confirm:
+                    typer.echo("❌ Webhook secret generation cancelled.")
+                    typer.echo("   You can manually configure the secret later with:")
+                    typer.echo(f"   agent-validator config --set-webhook-secret {data['webhook_secret']}")
+                    return
+            
+            # Auto-set the webhook secret
+            config.webhook_secret = data['webhook_secret']
+            save_config(config)
+            typer.echo("✅ Webhook secret automatically configured in your local settings.")
+            typer.echo("   You can now use HMAC signatures for enhanced security.")
+            
+        elif show:
+            # Show current webhook secret
+            if config.webhook_secret:
+                typer.echo("🔐 Current webhook secret:")
+                typer.echo(f"   {config.webhook_secret}")
+                typer.echo("")
+                typer.echo("⚠️  Keep this secret secure and don't share it!")
+            else:
+                typer.echo("❌ No webhook secret configured locally.")
+                typer.echo("   Run 'agent-validator webhook --generate' to create one.")
+            
+        elif status:
+            # Check webhook status
+            response = requests.get(
+                f"{config.cloud_endpoint}/webhooks/status",
+                headers={"license-key": config.license_key},
+                timeout=10
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            if data["has_webhook_secret"]:
+                typer.echo("✅ Webhook secret is configured")
+                typer.echo(f"   Created: {data['created_at']}")
+            else:
+                typer.echo("❌ No webhook secret configured")
+                typer.echo("   Run 'agent-validator webhook --generate' to create one")
+                
+        elif revoke:
+            # Revoke webhook secret
+            response = requests.delete(
+                f"{config.cloud_endpoint}/webhooks/revoke",
+                headers={"license-key": config.license_key},
+                timeout=10
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            typer.echo("🗑️  Webhook secret revoked successfully")
+            typer.echo("   Generate a new one with 'agent-validator webhook --generate' to continue using HMAC signatures")
+            
+        else:
+            # Show help
+            typer.echo("Webhook secret management commands:")
+            typer.echo("  --generate, -g    Generate a new webhook secret")
+            typer.echo("  --status, -s      Check if webhook secret is configured")
+            typer.echo("  --show            Show the current webhook secret")
+            typer.echo("  --revoke, -r      Revoke current webhook secret")
+            typer.echo("  --force, -f       Force generation (overwrites existing secret)")
+            
+    except requests.exceptions.RequestException as e:
+        typer.echo(f"❌ Failed to communicate with API: {e}")
+        return
 
 
 @app.command()
