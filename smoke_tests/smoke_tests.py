@@ -222,10 +222,15 @@ class AgentValidatorSmokeTester:
         test_key = "test-license-key-12345"
         self._run_cli_command(["config", "--set-license-key", test_key])
         
-        # Verify it was set
+        # Verify it was set (should be masked by default)
         output = self._run_cli_command(["config", "--show"])
+        if not self._string_in_output(output, "***"):
+            raise SmokeTestError("License key should be masked by default")
+        
+        # Test showing secrets
+        output = self._run_cli_command(["config", "--show", "--show-secrets"])
         if not self._string_in_output(output, test_key):
-            raise SmokeTestError("License key was not set correctly")
+            raise SmokeTestError("License key should be visible with --show-secrets")
         
         print("✅ CLI configuration working")
     

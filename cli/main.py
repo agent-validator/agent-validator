@@ -91,6 +91,7 @@ def id() -> None:
 @app.command()
 def config(
     show: bool = typer.Option(False, "--show", help="Show current configuration"),
+    show_secrets: bool = typer.Option(False, "--show-secrets", help="Show sensitive values (license key, webhook secret)"),
     set_license_key: Optional[str] = typer.Option(None, "--set-license-key", help="Set license key"),
     set_endpoint: Optional[str] = typer.Option(
         None, "--set-endpoint", help="Set cloud endpoint"
@@ -112,8 +113,14 @@ def config(
         typer.echo(f"  cloud_endpoint: {config.cloud_endpoint}")
         typer.echo(f"  timeout_s: {config.timeout_s}")
         typer.echo(f"  retries: {config.retries}")
-        typer.echo(f"  license_key: {'***' if config.license_key else 'not set'}")
-        typer.echo(f"  webhook_secret: {'***' if config.webhook_secret else 'not set'}")
+        
+        # Handle sensitive values based on show_secrets flag
+        if show_secrets:
+            typer.echo(f"  license_key: {config.license_key or 'not set'}")
+            typer.echo(f"  webhook_secret: {config.webhook_secret or 'not set'}")
+        else:
+            typer.echo(f"  license_key: {'***' if config.license_key else 'not set'}")
+            typer.echo(f"  webhook_secret: {'***' if config.webhook_secret else 'not set'}")
         return
     
     if set_license_key is not None:

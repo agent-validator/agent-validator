@@ -463,7 +463,7 @@ agent-validator dashboard [--port <port>] [--url] [--open]
 agent-validator id
 
 # Manage configuration
-agent-validator config [--show] [--set-license-key <key>] [--set-endpoint <url>] [--set-log-to-cloud <true|false>]
+agent-validator config [--show] [--show-secrets] [--set-license-key <key>] [--set-endpoint <url>] [--set-log-to-cloud <true|false>]
 ```
 
 ### 📊 Exit Codes
@@ -471,6 +471,22 @@ agent-validator config [--show] [--set-license-key <key>] [--set-endpoint <url>]
 - `0`: Success
 - `1`: General error
 - `2`: Validation failed
+
+### 🔒 Security Notes
+
+- **Configuration Display**: By default, sensitive values (license key, webhook secret) are masked as `***` when showing configuration
+- **Show Secrets**: Use `--show-secrets` flag to display actual values for debugging/verification
+- **Example**:
+
+  ```bash
+  # Default (masked)
+  agent-validator config --show
+  # Output: license_key: ***
+
+  # With secrets visible
+  agent-validator config --show --show-secrets
+  # Output: license_key: my-actual-key
+  ```
 
 ---
 
@@ -576,6 +592,9 @@ A: Yes! The library is designed for production use with proper error handling, l
 
 **Q: How do I access the web dashboard securely?**  
 A: Use `agent-validator dashboard` which creates a secure local proxy server. Never put your license key in URLs - the CLI handles authentication securely via headers.
+
+**Q: How do I verify my license key is set correctly?**  
+A: Use `agent-validator config --show --show-secrets` to display the actual license key value. By default, sensitive values are masked as `***` for security.
 
 **Q: What's the performance impact?**  
 A: Minimal. Validation is fast, and logging is asynchronous. The main overhead comes from retry attempts when validation fails.
