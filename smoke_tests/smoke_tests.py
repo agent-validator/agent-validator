@@ -725,7 +725,8 @@ schema = Schema({
     "api_key": str,
     "jwt_token": str,
     "email": str,
-    "password": str
+    "password": str,
+    "config": str
 })
 
 # Data with sensitive information
@@ -733,13 +734,17 @@ sensitive_data = {
     "api_key": "sk-1234567890abcdef",
     "jwt_token": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
     "email": "john.doe@example.com",
-    "password": "secret123"
+    "password": "secret123",
+    "config": "api_key=sk-1234567890abcdef&jwt=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c&email=john.doe@example.com&password=secret123"
 }
 
 result = validate(sensitive_data, schema, mode=ValidationMode.STRICT, context={"test": "redaction"})
 
 # Check that the result contains the original data
 if result["api_key"] != "sk-1234567890abcdef":
+    sys.exit(1)
+
+if result["config"] != "api_key=sk-1234567890abcdef&jwt=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c&email=john.doe@example.com&password=secret123":
     sys.exit(1)
 
 print("✅ Validation with sensitive data successful")
@@ -768,7 +773,7 @@ print("✅ Validation with sensitive data successful")
                         entry = json.loads(line.strip())
                         if entry.get("context", {}).get("test") == "redaction":
                             output_sample = entry.get("output_sample", "")
-                            # Check that sensitive data is redacted
+                            # Check that sensitive data is redacted in the config field
                             if "sk-1234567890abcdef" in output_sample:
                                 raise SmokeTestError("API key not redacted in log")
                             if "Bearer eyJ" in output_sample:
@@ -781,6 +786,12 @@ print("✅ Validation with sensitive data successful")
                             # Check that redaction markers are present
                             if "[REDACTED]" not in output_sample:
                                 raise SmokeTestError("No redaction markers found in log")
+                            
+                            # Check that the config field specifically is redacted
+                            if "api_key=sk-1234567890abcdef" in output_sample:
+                                raise SmokeTestError("API key in config field not redacted")
+                            if "jwt=Bearer eyJ" in output_sample:
+                                raise SmokeTestError("JWT in config field not redacted")
                             
                             redacted_found = True
                             break
