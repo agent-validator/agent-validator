@@ -66,6 +66,12 @@ agent-validator test schema.json input.json --mode COERCE
 # View recent logs
 agent-validator logs -n 20
 
+# View cloud logs
+agent-validator cloud-logs -n 20
+
+# Open web dashboard (secure proxy)
+agent-validator dashboard
+
 # Generate correlation ID
 agent-validator id
 
@@ -225,6 +231,33 @@ result = validate(
     config=config
 )
 ```
+
+### 🌐 Web Dashboard
+
+Access your validation logs through a secure web dashboard:
+
+```bash
+# Configure your license key
+agent-validator config --set-license-key your-license-key
+
+# Open dashboard with secure local proxy
+agent-validator dashboard
+```
+
+This opens a local proxy server at `http://localhost:8080` that securely forwards requests to the cloud API with proper authentication headers. The dashboard shows:
+
+- Recent validation attempts
+- Success/failure rates
+- Performance metrics
+- Error details
+- Correlation IDs for debugging
+
+**Security Features:**
+
+- ✅ No credentials in URLs
+- ✅ Secure header authentication
+- ✅ User data isolation
+- ✅ Local proxy prevents credential exposure
 
 ---
 
@@ -417,8 +450,14 @@ result = validate(
 # Test validation
 agent-validator test <schema.json> <input.json> [--mode STRICT|COERCE]
 
-# View logs
+# View local logs
 agent-validator logs [-n <number>] [--clear]
+
+# View cloud logs
+agent-validator cloud-logs [-n <number>]
+
+# Open web dashboard
+agent-validator dashboard [--port <port>] [--url] [--open]
 
 # Generate correlation ID
 agent-validator id
@@ -506,6 +545,9 @@ A: Sensitive data is automatically redacted before logging. You can also add cus
 **Q: Can I use this in production?**  
 A: Yes! The library is designed for production use with proper error handling, logging, and monitoring capabilities.
 
+**Q: How do I access the web dashboard securely?**  
+A: Use `agent-validator dashboard` which creates a secure local proxy server. Never put your license key in URLs - the CLI handles authentication securely via headers.
+
 **Q: What's the performance impact?**  
 A: Minimal. Validation is fast, and logging is asynchronous. The main overhead comes from retry attempts when validation fails.
 
@@ -520,7 +562,7 @@ A: Currently only Python dict schemas are supported. JSONSchema support is plann
 - [ ] Pydantic model support
 - [ ] Custom validators per field
 - [ ] Schema composition and inheritance
-- [ ] Web dashboard for monitoring
+- [x] Web dashboard for monitoring
 - [ ] Alerting and notifications
 - [ ] Schema versioning
 - [ ] Performance metrics

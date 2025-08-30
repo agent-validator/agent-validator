@@ -132,6 +132,151 @@ def config(
     save_config(config)
 
 
+@app.command()
+def cloud_logs(
+    n: int = typer.Option(20, "--number", "-n", help="Number of log entries to show"),
+) -> None:
+    """Show recent validation logs from cloud service."""
+    config = get_config()
+    
+    if not config.license_key:
+        typer.echo("❌ No license key configured. Run 'agent-validator config --set-license-key <key>' first.")
+        return
+    
+    try:
+        import requests
+        
+        response = requests.get(
+            f"{config.cloud_endpoint}/logs?limit={n}",
+            headers={"license-key": config.license_key},
+            timeout=10
+        )
+        response.raise_for_status()
+        
+        logs = response.json()
+        if not logs:
+            typer.echo("No logs found in cloud service.")
+            return
+        
+        for log in logs:
+            ts = log.get("ts", "unknown")
+            correlation_id = log.get("correlation_id", "unknown")
+            valid = "✓" if log.get("valid") else "✗"
+            mode = log.get("mode", "unknown")
+            attempts = log.get("attempts", 0)
+            duration_ms = log.get("duration_ms", 0)
+            
+            typer.echo(
+                f"{ts} {valid} {correlation_id} {mode} "
+                f"(attempts: {attempts}, duration: {duration_ms}ms)"
+            )
+            
+    except requests.exceptions.ConnectionError:
+        typer.echo(f"❌ Cannot connect to {config.cloud_endpoint}. Is the server running?")
+    except requests.exceptions.RequestException as e:
+        typer.echo(f"❌ Failed to fetch cloud logs: {e}")
+
+
+@app.command()
+def dashboard(
+    open_browser: bool = typer.Option(True, "--open", help="Open dashboard in browser"),
+    show_url: bool = typer.Option(False, "--url", help="Show dashboard URL"),
+    port: int = typer.Option(8080, "--port", "-p", help="Port for local proxy server"),
+) -> None:
+    """Open the web dashboard for viewing cloud logs via secure local proxy."""
+    config = get_config()
+    
+    if not config.license_key:
+        typer.echo("❌ No license key configured. Run 'agent-validator config --set-license-key <key>' first.")
+        return
+    
+    try:
+        import threading
+        import time
+        from http.server import HTTPServer, BaseHTTPRequestHandler
+        import urllib.request
+        import urllib.parse
+        
+        class DashboardProxy(BaseHTTPRequestHandler):
+            def do_GET(self):
+                if self.path == '/':
+                    # Proxy the dashboard request with proper headers
+                    try:
+                        req = urllib.request.Request(
+                            f"{config.cloud_endpoint}/dashboard",
+                            headers={"license-key": config.license_key}
+                        )
+                        
+                        with urllib.request.urlopen(req) as response:
+                            content = response.read()
+                            self.send_response(200)
+                            self.send_header('Content-type', 'text/html')
+                            self.end_headers()
+                            self.wfile.write(content)
+                    except Exception as e:
+                        self.send_response(500)
+                        self.send_header('Content-type', 'text/html')
+                        self.end_headers()
+                        error_html = f"""
+                        <html><body>
+                        <h1>Error</h1>
+                        <p>Failed to load dashboard: {e}</p>
+                        </body></html>
+                        """
+                        self.wfile.write(error_html.encode())
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+            
+            def log_message(self, format, *args):
+                # Suppress logging
+                pass
+        
+        # Start local proxy server
+        server = HTTPServer(('localhost', port), DashboardProxy)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
+        
+        local_url = f"http://localhost:{port}"
+        
+        if show_url:
+            typer.echo(f"Dashboard URL: {local_url}")
+        
+        if open_browser:
+            try:
+                import webbrowser
+                # Give server a moment to start
+                time.sleep(0.5)
+                webbrowser.open(local_url)
+                typer.echo(f"🌐 Opening dashboard at {local_url}")
+                typer.echo("Press Ctrl+C to stop the proxy server")
+                
+                # Keep the server running
+                try:
+                    while True:
+                        time.sleep(1)
+                except KeyboardInterrupt:
+                    typer.echo("\n🛑 Stopping proxy server...")
+                    server.shutdown()
+                    
+            except Exception as e:
+                typer.echo(f"❌ Failed to open browser: {e}")
+                typer.echo(f"Please visit: {local_url}")
+        else:
+            typer.echo(f"Dashboard URL: {local_url}")
+            typer.echo("Press Ctrl+C to stop the proxy server")
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                typer.echo("\n🛑 Stopping proxy server...")
+                server.shutdown()
+            
+    except Exception as e:
+        typer.echo(f"❌ Failed to start dashboard proxy: {e}")
+
+
 def main() -> None:
     """Main entry point."""
     # Create default config on first run
