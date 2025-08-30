@@ -145,51 +145,6 @@ class AgentValidatorSmokeTester:
         
         with open(self.test_invalid_input_file, 'w') as f:
             json.dump(invalid_input, f, indent=2)
-        
-    def _create_test_files(self):
-        """Create test JSON files for CLI testing."""
-        # Valid schema
-        schema = {
-            "name": "string",
-            "age": "integer",
-            "email": "string",
-            "is_active": "boolean",
-            "tags": ["string"],
-            "metadata": {
-                "source": "string",
-                "version": "string"
-            }
-        }
-        
-        with open(self.test_schema_file, 'w') as f:
-            json.dump(schema, f, indent=2)
-        
-        # Valid input
-        valid_input = {
-            "name": "John Doe",
-            "age": 30,
-            "email": "john@example.com",
-            "is_active": True,
-            "tags": ["user", "active"],
-            "metadata": {
-                "source": "api",
-                "version": "1.0.0"
-            }
-        }
-        
-        with open(self.test_input_file, 'w') as f:
-            json.dump(valid_input, f, indent=2)
-        
-        # Invalid input (missing required fields)
-        invalid_input = {
-            "name": "John Doe",
-            "age": "thirty",  # Should be int
-            "email": "invalid-email",  # Invalid email format
-            "is_active": "yes"  # Should be boolean
-        }
-        
-        with open(self.test_invalid_input_file, 'w') as f:
-            json.dump(invalid_input, f, indent=2)
     
     def _run_cli_command(self, args: list, expect_success: bool = True) -> str:
         """Run a CLI command in isolated environment and return output."""
