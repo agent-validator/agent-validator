@@ -956,7 +956,7 @@ except Exception as e:
                 [str(self.python_path), "-c", """
 import sys
 import os
-from agent_validator import get_config
+from agent_validator.config import get_config
 
 # Set environment variable
 os.environ['AGENT_VALIDATOR_TIMEOUT_S'] = '30'
