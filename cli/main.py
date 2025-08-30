@@ -13,6 +13,17 @@ from agent_validator.logging_ import get_recent_logs, clear_logs
 from agent_validator.config import get_config, save_config, create_default_config
 
 
+def parse_validation_mode(value: str) -> ValidationMode:
+    """Parse validation mode with case-insensitive support."""
+    value_lower = value.lower()
+    if value_lower == "strict":
+        return ValidationMode.STRICT
+    elif value_lower == "coerce":
+        return ValidationMode.COERCE
+    else:
+        raise ValueError(f"Invalid validation mode: {value}. Must be 'strict' or 'coerce'")
+
+
 app = typer.Typer(
     name="agent-validator",
     help="Validate LLM/agent outputs against schemas",
@@ -54,12 +65,15 @@ def logs(
 def test(
     schema_path: str = typer.Argument(..., help="Path to schema JSON file"),
     input_path: str = typer.Argument(..., help="Path to input JSON file"),
-    mode: ValidationMode = typer.Option(
-        ValidationMode.STRICT, "--mode", "-m", help="Validation mode"
+    mode: str = typer.Option(
+        "strict", "--mode", "-m", help="Validation mode (strict/coerce)"
     ),
 ) -> None:
     """Test validation with schema and input files."""
     try:
+        # Parse validation mode with case-insensitive support
+        validation_mode = parse_validation_mode(mode)
+        
         # Load schema
         with open(schema_path, "r") as f:
             schema_data = json.load(f)
@@ -70,7 +84,7 @@ def test(
             input_data = json.load(f)
         
         # Validate
-        result = validate(input_data, schema, mode=mode)
+        result = validate(input_data, schema, mode=validation_mode)
         
         typer.echo("✓ Validation successful")
         typer.echo(json.dumps(result, indent=2))

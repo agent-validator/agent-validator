@@ -242,7 +242,7 @@ class AgentValidatorSmokeTester:
             "test", 
             str(self.test_schema_file), 
             str(self.test_input_file),
-            "--mode", "COERCE"
+            "--mode", "cOeRce" # Case-insensitive mode
         ])
         
         if not self._string_in_output(output, "Validation successful"):
@@ -264,7 +264,7 @@ class AgentValidatorSmokeTester:
                 "test", 
                 str(self.test_schema_file), 
                 str(self.test_invalid_input_file),
-                "--mode", "STRICT"
+                "--mode", "sTrIct" # Case-insensitive mode
             ], expect_success=False)
         except SmokeTestError as e:
             if not self._string_in_output(str(e), "exit code 2"):
