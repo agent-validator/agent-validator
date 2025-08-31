@@ -101,9 +101,9 @@ class AgentValidatorSmokeTester:
             print("✅ Package installed successfully")
 
         except subprocess.TimeoutExpired:
-            raise SmokeTestError("Installation timed out")
+            raise SmokeTestError("Installation timed out") from None
         except Exception as e:
-            raise SmokeTestError(f"Installation error: {e}")
+            raise SmokeTestError(f"Installation error: {e}") from e
 
     def _create_test_files(self):
         """Create test JSON files for CLI testing."""
@@ -206,9 +206,9 @@ class AgentValidatorSmokeTester:
             return result.stdout.strip()
 
         except subprocess.TimeoutExpired:
-            raise SmokeTestError(f"CLI command timed out: args={args}")
+            raise SmokeTestError(f"CLI command timed out: args={args}") from None
         except FileNotFoundError:
-            raise SmokeTestError(f"agent-validator CLI not found at: {self.cli_path}")
+            raise SmokeTestError(f"agent-validator CLI not found at: {self.cli_path}") from None
 
     def _string_in_output(self, output: str, string: str) -> bool:
         """Check if a string is in the output."""
@@ -301,7 +301,7 @@ class AgentValidatorSmokeTester:
             ], expect_success=False)
         except SmokeTestError as e:
             if not self._string_in_output(str(e), "exit code 2"):
-                raise SmokeTestError(f"Expected validation failure with exit code 2: {e}")
+                raise SmokeTestError(f"Expected validation failure with exit code 2: {e}") from e
 
         print("✅ CLI validation (failure) working")
 
@@ -379,7 +379,7 @@ print("✅ All library functionality working")
             print("✅ All library imports and functionality working")
 
         except Exception as e:
-            raise SmokeTestError(f"Library functionality failed: {e}")
+            raise SmokeTestError(f"Library functionality failed: {e}") from e
 
     def test_library_validation_modes(self) -> None:
         """Test different validation modes in isolated environment."""
@@ -436,7 +436,7 @@ print("✅ Validation modes working")
             print("✅ Validation modes working")
 
         except Exception as e:
-            raise SmokeTestError(f"Validation modes test failed: {e}")
+            raise SmokeTestError(f"Validation modes test failed: {e}") from e
 
     def test_library_error_handling(self) -> None:
         """Test library error handling in isolated environment."""
@@ -486,7 +486,7 @@ print("✅ Error handling working")
             print("✅ Error handling working")
 
         except Exception as e:
-            raise SmokeTestError(f"Error handling test failed: {e}")
+            raise SmokeTestError(f"Error handling test failed: {e}") from e
 
     def test_library_config(self) -> None:
         """Test library configuration in isolated environment."""
@@ -535,7 +535,7 @@ print("✅ Library configuration working")
             print("✅ Library configuration working")
 
         except Exception as e:
-            raise SmokeTestError(f"Configuration test failed: {e}")
+            raise SmokeTestError(f"Configuration test failed: {e}") from e
 
     def test_library_retry_logic(self) -> None:
         """Test library retry logic in isolated environment."""
@@ -590,7 +590,7 @@ print("✅ Retry logic working")
             print("✅ Retry logic working")
 
         except Exception as e:
-            raise SmokeTestError(f"Retry logic test failed: {e}")
+            raise SmokeTestError(f"Retry logic test failed: {e}") from e
 
     def test_library_logging(self) -> None:
         """Test library logging functionality in isolated environment."""
@@ -652,7 +652,7 @@ print("✅ Logging functionality working")
             print("✅ Logging functionality working")
 
         except Exception as e:
-            raise SmokeTestError(f"Logging test failed: {e}")
+            raise SmokeTestError(f"Logging test failed: {e}") from e
 
     def test_local_log_files(self) -> None:
         """Test that log files are created in the local log location."""
@@ -706,7 +706,7 @@ print("✅ Logging functionality working")
             print(f"✅ Local log files working - found {valid_entries} valid entries, {test_entries} test entries")
 
         except Exception as e:
-            raise SmokeTestError(f"Local log file test failed: {e}")
+            raise SmokeTestError(f"Local log file test failed: {e}") from e
 
     def test_redaction_patterns(self) -> None:
         """Test that sensitive data is properly redacted in logs."""
@@ -862,7 +862,7 @@ print("✅ Validation with sensitive data successful")
             print("✅ Redaction patterns working correctly")
 
         except Exception as e:
-            raise SmokeTestError(f"Redaction test failed: {e}")
+            raise SmokeTestError(f"Redaction test failed: {e}") from e
 
     def test_exponential_backoff_jitter(self) -> None:
         """Test exponential backoff and jitter in retry logic."""
@@ -942,7 +942,7 @@ except Exception as e:
 
         except Exception as e:
             print(f"🔍 Debug - exception: {e}")
-            raise SmokeTestError(f"Backoff test failed: {e}")
+            raise SmokeTestError(f"Backoff test failed: {e}") from e
 
     def test_configuration_precedence(self) -> None:
         """Test configuration precedence: CLI args → env → config file."""
@@ -979,7 +979,7 @@ print("✅ Environment variable precedence working")
             print("✅ Configuration precedence working correctly")
 
         except Exception as e:
-            raise SmokeTestError(f"Config precedence test failed: {e}")
+            raise SmokeTestError(f"Config precedence test failed: {e}") from e
 
     def test_cloud_redaction(self) -> None:
         """Test that cloud logs are also redacted."""
@@ -1036,7 +1036,7 @@ print("✅ Cloud validation with sensitive data successful")
             print("✅ Cloud redaction test completed")
 
         except Exception as e:
-            raise SmokeTestError(f"Cloud redaction test failed: {e}")
+            raise SmokeTestError(f"Cloud redaction test failed: {e}") from e
 
     def test_cloud_failsafe(self) -> None:
         """Test that cloud errors don't break user code."""
@@ -1092,7 +1092,7 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
             print("✅ Cloud failsafe working correctly")
 
         except Exception as e:
-            raise SmokeTestError(f"Cloud failsafe test failed: {e}")
+            raise SmokeTestError(f"Cloud failsafe test failed: {e}") from e
 
     def test_webhook_management(self) -> None:
         """Test webhook secret management functionality."""
@@ -1151,7 +1151,7 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
             print("✅ Webhook status correctly shows no secret after revocation")
 
         except Exception as e:
-            raise SmokeTestError(f"Webhook management test failed: {e}")
+            raise SmokeTestError(f"Webhook management test failed: {e}") from e
 
     def test_cloud_functionality(self) -> None:
         """Test cloud functionality with configured backend URL."""

@@ -138,7 +138,7 @@ def _log_to_cloud(log_entry: dict[str, Any], config: Any) -> None:
         )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        raise CloudLogError(f"HTTP request failed: {e}")
+        raise CloudLogError(f"HTTP request failed: {e}") from e
 
 
 def get_recent_logs(n: int = 20) -> list[dict[str, Any]]:

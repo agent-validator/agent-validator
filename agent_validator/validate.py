@@ -65,7 +65,7 @@ def validate(
                         reason="Invalid JSON",
                         attempt=0,
                         correlation_id=correlation_id,
-                    )
+                    ) from None
             # In COERCE mode, treat as plain string
             agent_output = {"raw_output": agent_output}
 
@@ -264,7 +264,7 @@ def _validate_against_schema(
                         path=path,
                         reason="Cannot coerce to dict",
                         attempt=0,
-                    )
+                    ) from None
             else:
                 raise ValidationError(
                     path=path,
@@ -315,7 +315,7 @@ def _validate_against_schema(
                                 path=f"{path}.{key}",
                                 reason="Cannot coerce to list",
                                 attempt=0,
-                            )
+                            ) from None
                     else:
                         raise ValidationError(
                             path=f"{path}.{key}",
@@ -350,7 +350,7 @@ def _validate_type(
 
     if isinstance(value, expected_type):
         # Apply size limits for strings
-        if expected_type == str and config and len(value) > config.max_str_len:
+        if expected_type is str and config and len(value) > config.max_str_len:
             raise ValidationError(
                 path=path,
                 reason="size_limit",
@@ -366,7 +366,7 @@ def _validate_type(
         )
 
     # Coerce in COERCE mode
-    if expected_type == int:
+    if expected_type is int:
         if isinstance(value, str):
             try:
                 return int(value.strip())
@@ -375,7 +375,7 @@ def _validate_type(
                     path=path,
                     reason="Cannot coerce to int",
                     attempt=0,
-                )
+                ) from None
         elif isinstance(value, float):
             return int(value)
         else:
@@ -385,7 +385,7 @@ def _validate_type(
                 attempt=0,
             )
 
-    elif expected_type == float:
+    elif expected_type is float:
         if isinstance(value, str):
             try:
                 return float(value.strip())
@@ -394,7 +394,7 @@ def _validate_type(
                     path=path,
                     reason="Cannot coerce to float",
                     attempt=0,
-                )
+                ) from None
         elif isinstance(value, int):
             return float(value)
         else:
@@ -404,7 +404,7 @@ def _validate_type(
                 attempt=0,
             )
 
-    elif expected_type == bool:
+    elif expected_type is bool:
         if isinstance(value, str):
             value_lower = value.strip().lower()
             if value_lower in ("true", "1", "yes", "on"):
@@ -426,7 +426,7 @@ def _validate_type(
                 attempt=0,
             )
 
-    elif expected_type == str:
+    elif expected_type is str:
         result = str(value)
         # Apply size limits for coerced strings
         if config and len(result) > config.max_str_len:

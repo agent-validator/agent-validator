@@ -106,7 +106,7 @@ def logs(
                 from datetime import datetime
                 dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
                 formatted_ts = dt.strftime("%Y-%m-%d %H:%M:%S")
-            except:
+            except (ValueError, TypeError):
                 formatted_ts = ts
         else:
             formatted_ts = ts
@@ -411,7 +411,7 @@ def cloud_logs(
                     from datetime import datetime
                     dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
                     formatted_ts = dt.strftime("%Y-%m-%d %H:%M:%S")
-                except:
+                except (ValueError, TypeError):
                     formatted_ts = ts
             else:
                 formatted_ts = ts
