@@ -1,6 +1,7 @@
 """Tests for CLI functionality."""
 
 import json
+import sys
 import tempfile
 import uuid
 from pathlib import Path
@@ -12,9 +13,23 @@ from typer.testing import CliRunner
 from cli.main import app
 
 
+def assert_error_in_output(result, error_message):
+    """Helper to check for error messages in either stdout or stderr."""
+    if sys.version_info < (3, 10):
+        # Python 3.9: stderr is captured separately
+        assert error_message in result.stderr
+    else:
+        # Python 3.10+: stdout and stderr are mixed
+        assert error_message in result.stdout
+
+
 @pytest.fixture
 def runner():
-    return CliRunner(mix_stderr=False)
+    # Use mix_stderr=False for Python 3.9, default for newer versions
+    if sys.version_info < (3, 10):
+        return CliRunner(mix_stderr=False)
+    else:
+        return CliRunner()
 
 
 @pytest.fixture
@@ -75,7 +90,7 @@ def test_test_command_failure(runner, temp_schema_file):
         result = runner.invoke(app, ["test", temp_schema_file, invalid_input_file])
 
         assert result.exit_code == 2
-        assert "✗ Validation failed" in result.stderr
+        assert_error_in_output(result, "✗ Validation failed")
     finally:
         Path(invalid_input_file).unlink(missing_ok=True)
 
@@ -97,7 +112,7 @@ def test_test_command_strict_mode(runner, temp_schema_file):
         )
 
         assert result.exit_code == 2
-        assert "✗ Validation failed" in result.stderr
+        assert_error_in_output(result, "✗ Validation failed")
     finally:
         Path(input_file).unlink(missing_ok=True)
 
