@@ -2,29 +2,28 @@
 
 import json
 import time
-from typing import Any, Dict, List, Optional, Union, Tuple
-from .schemas import Schema
-from .errors import ValidationError, SchemaError
-from .typing_ import ValidationMode, Config, RetryFunction
-from .retry import retry_with_backoff
+from typing import Any, Optional, Union
+
+from .errors import ValidationError
 from .logging_ import log_validation_result
-from .redact import redact_sensitive_data
+from .schemas import Schema
+from .typing_ import Config, RetryFunction, ValidationMode
 
 
 def validate(
-    agent_output: Union[str, Dict[str, Any]],
+    agent_output: Union[str, dict[str, Any]],
     schema: Schema,
     retry_fn: Optional[RetryFunction] = None,
     retries: int = 2,
     mode: ValidationMode = ValidationMode.STRICT,
     timeout_s: int = 20,
     log_to_cloud: bool = False,
-    context: Optional[Dict[str, Any]] = None,
+    context: Optional[dict[str, Any]] = None,
     config: Optional[Config] = None,
 ) -> Any:
     """
     Validate agent output against a schema with optional retries.
-    
+
     Args:
         agent_output: The output to validate (string or dict)
         schema: Schema to validate against
@@ -35,10 +34,10 @@ def validate(
         log_to_cloud: Whether to log to cloud service
         context: Additional context for logging
         config: Configuration object
-        
+
     Returns:
         Validated and coerced output
-        
+
     Raises:
         ValidationError: If validation fails after all retries
         SchemaError: If schema is malformed
@@ -46,10 +45,10 @@ def validate(
     config = config or Config()
     context = context or {}
     correlation_id = context.get("correlation_id")
-    
+
     # Store original input for retry function
     original_input = agent_output
-    
+
     # Parse string output to dict if needed
     if isinstance(agent_output, str):
         try:
@@ -66,10 +65,10 @@ def validate(
                         reason="Invalid JSON",
                         attempt=0,
                         correlation_id=correlation_id,
-                    )
+                    ) from None
             # In COERCE mode, treat as plain string
             agent_output = {"raw_output": agent_output}
-    
+
     # Check size limits
     output_str = json.dumps(agent_output)
     if len(output_str.encode()) > config.max_output_bytes:
@@ -79,21 +78,29 @@ def validate(
             attempt=0,
             correlation_id=correlation_id,
         )
-    
+
     # Check if we need to retry due to JSON parsing failure
     json_parse_failed = False
-    if isinstance(original_input, str) and isinstance(agent_output, dict) and "raw_output" in agent_output:
+    if (
+        isinstance(original_input, str)
+        and isinstance(agent_output, dict)
+        and "raw_output" in agent_output
+    ):
         json_parse_failed = True
-    
+
     # Check if we need to retry due to JSON parsing failure
     json_parse_failed = False
-    if isinstance(original_input, str) and isinstance(agent_output, dict) and "raw_output" in agent_output:
+    if (
+        isinstance(original_input, str)
+        and isinstance(agent_output, dict)
+        and "raw_output" in agent_output
+    ):
         json_parse_failed = True
-    
+
     # Initialize retry variables
     start_time = None
     last_error = None
-    
+
     # If JSON parsing failed and we have a retry function, go directly to retry
     if json_parse_failed and retry_fn:
         start_time = time.time()
@@ -109,7 +116,7 @@ def validate(
             validated_output = _validate_against_schema(
                 agent_output, schema, mode, config
             )
-            
+
             # Log successful validation
             log_validation_result(
                 correlation_id=correlation_id,
@@ -123,9 +130,9 @@ def validate(
                 log_to_cloud=log_to_cloud,
                 config=config,
             )
-            
+
             return validated_output
-            
+
         except ValidationError as e:
             # If no retry function, re-raise immediately
             if not retry_fn:
@@ -142,18 +149,18 @@ def validate(
                     config=config,
                 )
                 raise
-            
+
             # Try retries
             start_time = time.time()
             last_error = e
-    
+
     # Retry for both JSON parsing failures and schema validation failures
     if start_time is not None and last_error is not None:
         for attempt in range(1, retries + 1):
             try:
                 # Call retry function
-                new_output = retry_fn(original_input, context)
-                
+                new_output = retry_fn(original_input, context)  # type: ignore
+
                 # Parse new output
                 if isinstance(new_output, str):
                     try:
@@ -162,17 +169,17 @@ def validate(
                         if mode == ValidationMode.STRICT:
                             continue
                         new_output = {"raw_output": new_output}
-                
+
                 # Check size limits
                 new_output_str = json.dumps(new_output)
                 if len(new_output_str.encode()) > config.max_output_bytes:
                     continue
-                
+
                 # Validate new output
                 validated_output = _validate_against_schema(
                     new_output, schema, mode, config
                 )
-                
+
                 # Log successful validation
                 duration_ms = int((time.time() - start_time) * 1000)
                 log_validation_result(
@@ -187,13 +194,13 @@ def validate(
                     log_to_cloud=log_to_cloud,
                     config=config,
                 )
-                
+
                 return validated_output
-                
+
             except ValidationError as retry_error:
                 last_error = retry_error
                 continue
-        
+
         # All retries failed
         duration_ms = int((time.time() - start_time) * 1000)
         log_validation_result(
@@ -208,7 +215,7 @@ def validate(
             log_to_cloud=log_to_cloud,
             config=config,
         )
-        
+
         raise last_error
 
 
@@ -220,11 +227,11 @@ def _validate_against_schema(
     path: str = "root",
 ) -> Any:
     """Validate data against schema with optional coercion."""
-    
+
     # Check if data is None (optional field)
     if data is None:
         return None
-    
+
     # Apply size limits
     if isinstance(data, str) and len(data) > config.max_str_len:
         raise ValidationError(
@@ -232,21 +239,21 @@ def _validate_against_schema(
             reason="size_limit",
             attempt=0,
         )
-    
+
     if isinstance(data, list) and len(data) > config.max_list_len:
         raise ValidationError(
             path=path,
             reason="size_limit",
             attempt=0,
         )
-    
+
     if isinstance(data, dict) and len(data) > config.max_dict_keys:
         raise ValidationError(
             path=path,
             reason="size_limit",
             attempt=0,
         )
-    
+
     # Validate against schema
     if isinstance(schema.schema_dict, dict):
         if not isinstance(data, dict):
@@ -265,14 +272,14 @@ def _validate_against_schema(
                         path=path,
                         reason="Cannot coerce to dict",
                         attempt=0,
-                    )
+                    ) from None
             else:
                 raise ValidationError(
                     path=path,
                     reason="Cannot coerce to dict",
                     attempt=0,
                 )
-        
+
         result = {}
         for key, expected_type in schema.schema_dict.items():
             if key not in data:
@@ -283,7 +290,7 @@ def _validate_against_schema(
                         attempt=0,
                     )
                 continue
-            
+
             value = data[key]
             if expected_type is None:
                 # Optional field
@@ -316,18 +323,20 @@ def _validate_against_schema(
                                 path=f"{path}.{key}",
                                 reason="Cannot coerce to list",
                                 attempt=0,
-                            )
+                            ) from None
                     else:
                         raise ValidationError(
                             path=f"{path}.{key}",
                             reason="Cannot coerce to list",
                             attempt=0,
                         )
-                
+
                 element_type = expected_type[0]
                 if isinstance(element_type, type):
                     result[key] = [
-                        _validate_type(item, element_type, mode, f"{path}.{key}[{i}]", config)
+                        _validate_type(
+                            item, element_type, mode, f"{path}.{key}[{i}]", config
+                        )
                         for i, item in enumerate(value)
                     ]
                 elif isinstance(element_type, dict):
@@ -338,36 +347,45 @@ def _validate_against_schema(
                         )
                         for i, item in enumerate(value)
                     ]
-        
+
         return result
-    
-    return data
+
+    return data  # type: ignore
 
 
 def _validate_type(
-    value: Any, expected_type: type, mode: ValidationMode, path: str, config: Optional[Config] = None
+    value: Any,
+    expected_type: type,
+    mode: ValidationMode,
+    path: str,
+    config: Optional[Config] = None,
 ) -> Any:
     """Validate and optionally coerce a value to the expected type."""
-    
+
     if isinstance(value, expected_type):
         # Apply size limits for strings
-        if expected_type == str and config and len(value) > config.max_str_len:
+        if (
+            expected_type is str
+            and config
+            and isinstance(value, str)
+            and len(value) > config.max_str_len
+        ):
             raise ValidationError(
                 path=path,
                 reason="size_limit",
                 attempt=0,
             )
         return value
-    
+
     if mode == ValidationMode.STRICT:
         raise ValidationError(
             path=path,
             reason=f"Expected {expected_type.__name__}, got {type(value).__name__}",
             attempt=0,
         )
-    
+
     # Coerce in COERCE mode
-    if expected_type == int:
+    if expected_type is int:
         if isinstance(value, str):
             try:
                 return int(value.strip())
@@ -376,7 +394,7 @@ def _validate_type(
                     path=path,
                     reason="Cannot coerce to int",
                     attempt=0,
-                )
+                ) from None
         elif isinstance(value, float):
             return int(value)
         else:
@@ -385,8 +403,8 @@ def _validate_type(
                 reason="Cannot coerce to int",
                 attempt=0,
             )
-    
-    elif expected_type == float:
+
+    elif expected_type is float:
         if isinstance(value, str):
             try:
                 return float(value.strip())
@@ -395,7 +413,7 @@ def _validate_type(
                     path=path,
                     reason="Cannot coerce to float",
                     attempt=0,
-                )
+                ) from None
         elif isinstance(value, int):
             return float(value)
         else:
@@ -404,8 +422,8 @@ def _validate_type(
                 reason="Cannot coerce to float",
                 attempt=0,
             )
-    
-    elif expected_type == bool:
+
+    elif expected_type is bool:
         if isinstance(value, str):
             value_lower = value.strip().lower()
             if value_lower in ("true", "1", "yes", "on"):
@@ -426,8 +444,8 @@ def _validate_type(
                 reason="Cannot coerce to bool",
                 attempt=0,
             )
-    
-    elif expected_type == str:
+
+    elif expected_type is str:
         result = str(value)
         # Apply size limits for coerced strings
         if config and len(result) > config.max_str_len:
@@ -437,7 +455,7 @@ def _validate_type(
                 attempt=0,
             )
         return result
-    
+
     else:
         raise ValidationError(
             path=path,

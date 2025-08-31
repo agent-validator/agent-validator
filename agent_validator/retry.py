@@ -3,6 +3,7 @@
 import random
 import time
 from typing import Any, Callable, Optional
+
 from .typing_ import RetryFunction
 
 
@@ -16,7 +17,7 @@ def retry_with_backoff(
 ) -> Any:
     """
     Retry a function with exponential backoff and jitter.
-    
+
     Args:
         func: Function to retry
         max_retries: Maximum number of retry attempts
@@ -24,43 +25,46 @@ def retry_with_backoff(
         max_delay: Maximum delay in seconds
         factor: Exponential factor
         timeout_s: Total timeout in seconds (None for no timeout)
-        
+
     Returns:
         Result of the function call
-        
+
     Raises:
         Exception: Last exception raised by the function
     """
     start_time = time.time()
     last_exception = None
-    
+
     for attempt in range(max_retries + 1):
         try:
             # Check timeout
             if timeout_s and (time.time() - start_time) > timeout_s:
                 raise TimeoutError(f"Operation timed out after {timeout_s}s")
-            
+
             return func()
-            
+
         except Exception as e:
             last_exception = e
-            
+
             # Don't retry on the last attempt
             if attempt == max_retries:
                 break
-            
+
             # Calculate delay with exponential backoff and jitter
-            delay = min(base_delay * (factor ** attempt), max_delay)
+            delay = min(base_delay * (factor**attempt), max_delay)
             jitter = random.uniform(0, delay * 0.1)  # 10% jitter
             total_delay = delay + jitter
-            
+
             # Check if we would exceed timeout
             if timeout_s and (time.time() - start_time + total_delay) > timeout_s:
                 break
-            
+
             time.sleep(total_delay)
-    
-    raise last_exception
+
+    if last_exception is not None:
+        raise last_exception
+    else:
+        raise Exception("Retry failed with no exception")
 
 
 def create_retry_function(
@@ -73,7 +77,7 @@ def create_retry_function(
 ) -> RetryFunction:
     """
     Create a retry function that wraps the original function.
-    
+
     Args:
         original_fn: Original function to wrap
         max_retries: Maximum number of retry attempts
@@ -81,14 +85,15 @@ def create_retry_function(
         max_delay: Maximum delay in seconds
         factor: Exponential factor
         timeout_s: Total timeout in seconds
-        
+
     Returns:
         Wrapped function with retry logic
     """
-    def retry_wrapper(prompt: str, context: dict) -> Any:
-        def attempt():
+
+    def retry_wrapper(prompt: str, context: dict[str, Any]) -> Any:
+        def attempt() -> Any:
             return original_fn(prompt, context)
-        
+
         return retry_with_backoff(
             attempt,
             max_retries=max_retries,
@@ -97,5 +102,5 @@ def create_retry_function(
             factor=factor,
             timeout_s=timeout_s,
         )
-    
+
     return retry_wrapper

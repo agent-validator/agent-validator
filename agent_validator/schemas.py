@@ -1,43 +1,46 @@
 """Schema definition and validation logic."""
 
 import json
-from typing import Any, Dict, List, Optional, Union, Callable
+from typing import Any, Optional
+
 from .errors import SchemaError
 from .typing_ import ValidatorFunction
+
+SchemaDict = dict[str, Any]
 
 
 class Schema:
     """Schema definition for validating agent outputs."""
-    
+
     def __init__(
         self,
-        schema_dict: Dict[str, Any],
+        schema_dict: dict[str, Any],
         max_keys: Optional[int] = None,
         max_list_len: Optional[int] = None,
         max_str_len: Optional[int] = None,
-        validators: Optional[Dict[str, ValidatorFunction]] = None,
+        validators: Optional[dict[str, ValidatorFunction]] = None,
     ):
         self.schema_dict = schema_dict
         self.max_keys = max_keys
         self.max_list_len = max_list_len
         self.max_str_len = max_str_len
         self.validators = validators or {}
-        
+
         # Validate the schema itself
         self._validate_schema()
-    
+
     def _validate_schema(self) -> None:
         """Validate that the schema is well-formed."""
         if not isinstance(self.schema_dict, dict):
             raise SchemaError("Schema must be a dictionary")
-        
+
         for key, value in self.schema_dict.items():
             if not isinstance(key, str):
                 raise SchemaError(f"Schema keys must be strings, got {type(key)}")
-            
+
             if value is None:
                 continue  # Optional field
-                
+
             if isinstance(value, type):
                 # Simple type validation
                 if value not in (str, int, float, bool, list, dict):
@@ -58,8 +61,8 @@ class Schema:
                     raise SchemaError(f"Invalid list element schema: {value[0]}")
             else:
                 raise SchemaError(f"Invalid schema value type: {type(value)}")
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert schema to dictionary representation."""
         return {
             "schema": self.schema_dict,
@@ -68,10 +71,10 @@ class Schema:
             "max_str_len": self.max_str_len,
             "validators": list(self.validators.keys()) if self.validators else None,
         }
-    
-    def _serialize_schema_dict(self, schema_dict: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _serialize_schema_dict(self, schema_dict: SchemaDict) -> dict[str, Any]:
         """Serialize schema dict with type names instead of Python types."""
-        serialized = {}
+        serialized: dict[str, Any] = {}
         for key, value in schema_dict.items():
             if value is None:
                 serialized[key] = None
@@ -106,14 +109,19 @@ class Schema:
                     else:
                         serialized[key] = [str(element)]
                 else:
-                    serialized[key] = [self._serialize_schema_dict(item) if isinstance(item, dict) else str(item) for item in value]
+                    serialized[key] = [
+                        self._serialize_schema_dict(item)
+                        if isinstance(item, dict)
+                        else str(item)
+                        for item in value
+                    ]
             else:
                 serialized[key] = str(value)
         return serialized
-    
-    def _deserialize_schema_dict(self, schema_dict: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _deserialize_schema_dict(self, schema_dict: dict[str, Any]) -> SchemaDict:
         """Deserialize schema dict with string type names to Python types."""
-        deserialized = {}
+        deserialized: SchemaDict = {}
         for key, value in schema_dict.items():
             if value is None:
                 deserialized[key] = None
@@ -158,11 +166,16 @@ class Schema:
                     else:
                         deserialized[key] = [element]
                 else:
-                    deserialized[key] = [self._deserialize_schema_dict(item) if isinstance(item, dict) else item for item in value]
+                    deserialized[key] = [
+                        self._deserialize_schema_dict(item)
+                        if isinstance(item, dict)
+                        else item
+                        for item in value
+                    ]
             else:
                 deserialized[key] = value
         return deserialized
-    
+
     def to_json(self) -> str:
         """Convert schema to JSON string."""
         serialized_dict = {
@@ -173,32 +186,46 @@ class Schema:
             "validators": list(self.validators.keys()) if self.validators else None,
         }
         return json.dumps(serialized_dict, indent=2)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Schema":
+    def from_dict(cls, data: dict[str, Any]) -> "Schema":
         """Create schema from dictionary representation."""
         schema_dict = data["schema"]
         # Deserialize if the schema contains string type names
         if isinstance(schema_dict, dict):
             # Check if any values are strings that look like type names
             has_string_types = any(
-                isinstance(v, str) and v.lower() in ["string", "integer", "int", "float", "number", "boolean", "bool", "list", "array", "object", "dict"]
+                isinstance(v, str)
+                and v.lower()
+                in [
+                    "string",
+                    "integer",
+                    "int",
+                    "float",
+                    "number",
+                    "boolean",
+                    "bool",
+                    "list",
+                    "array",
+                    "object",
+                    "dict",
+                ]
                 for v in schema_dict.values()
             )
             if has_string_types:
                 schema_dict = cls._deserialize_schema_dict_static(schema_dict)
-        
+
         return cls(
             schema_dict=schema_dict,
             max_keys=data.get("max_keys"),
             max_list_len=data.get("max_list_len"),
             max_str_len=data.get("max_str_len"),
         )
-    
+
     @classmethod
-    def _deserialize_schema_dict_static(cls, schema_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def _deserialize_schema_dict_static(cls, schema_dict: dict[str, Any]) -> SchemaDict:
         """Static method to deserialize schema dict with string type names to Python types."""
-        deserialized = {}
+        deserialized: SchemaDict = {}
         for key, value in schema_dict.items():
             if value is None:
                 deserialized[key] = None
@@ -239,15 +266,22 @@ class Schema:
                         }
                         deserialized[key] = [type_map.get(element.lower(), element)]
                     elif isinstance(element, dict):
-                        deserialized[key] = [cls._deserialize_schema_dict_static(element)]
+                        deserialized[key] = [
+                            cls._deserialize_schema_dict_static(element)
+                        ]
                     else:
                         deserialized[key] = [element]
                 else:
-                    deserialized[key] = [cls._deserialize_schema_dict_static(item) if isinstance(item, dict) else item for item in value]
+                    deserialized[key] = [
+                        cls._deserialize_schema_dict_static(item)
+                        if isinstance(item, dict)
+                        else item
+                        for item in value
+                    ]
             else:
                 deserialized[key] = value
         return deserialized
-    
+
     @classmethod
     def from_json(cls, json_str: str) -> "Schema":
         """Create schema from JSON string."""
