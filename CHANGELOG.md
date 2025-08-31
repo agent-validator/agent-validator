@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Initial release of agent-validator
 - Core validation functionality with Python dict schemas
 - Support for strict and coerce validation modes
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite with property-based testing
 
 ### Features
+
 - Schema validation for primitive types (str, int, float, bool)
 - List and nested object validation
 - Optional field support
@@ -30,12 +32,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HMAC signature support for cloud logging
 
 ### CLI Commands
+
 - `agent-validator test` - Test validation with schema and input files
 - `agent-validator logs` - View recent validation logs
 - `agent-validator id` - Generate correlation ID
 - `agent-validator config` - Manage configuration
 
-## [0.1.0] - 2024-01-01
+## [1.0.0] - 2025-08-30
 
 ### Added
+
 - Initial release

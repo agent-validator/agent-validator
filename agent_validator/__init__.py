@@ -9,7 +9,7 @@ from .schemas import Schema
 from .typing_ import Config, ValidationMode
 from .validate import validate
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 __all__ = [
     "validate",

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-validator"
-version = "0.1.0"
+version = "1.0.0"
 description = "A library for validating agent outputs against schemas"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -35,6 +35,8 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.0.0",
     "types-requests>=2.25.0",
+    "build>=1.0.0",
+    "twine>=4.0.0",
 ]
 test = [
     "pytest>=7.0.0",

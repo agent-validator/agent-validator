@@ -642,6 +642,8 @@ cd agent-validator
 pip install -e ".[dev]"
 ```
 
+**Note**: The `[dev]` extras include build tools (`build`, `twine`) needed for creating releases.
+
 ### 🧪 Running Tests
 
 ```bash
@@ -701,6 +703,129 @@ python smoke_tests/smoke_tests.py --backend-url http://localhost:9090
 - 🔄 Clean testing environment every time
 - 🧪 Tests real installation and usage scenarios
 - 🚀 Perfect for CI/CD integration
+
+### 📦 Releasing New Versions
+
+The project uses automated CI/CD for releases. When you push a version tag, the CI automatically builds and publishes to PyPI.
+
+#### 1. **Update Version**
+
+Update the version in `agent_validator/version.py`:
+
+```python
+__version__ = "1.0.1"  # Increment version number
+```
+
+#### 2. **Update CHANGELOG**
+
+Add a new entry to `CHANGELOG.md` following the [Keep a Changelog](https://keepachangelog.com/) format:
+
+```markdown
+## [1.0.1] - 2025-01-01
+
+### Added
+
+- New feature description
+
+### Changed
+
+- Breaking change description
+
+### Fixed
+
+- Bug fix description
+```
+
+#### 3. **Run Pre-release Checks**
+
+```bash
+# Install build dependencies (if not already installed)
+pip install -e ".[dev]"
+
+# Run all tests
+python -m pytest tests/ -v
+
+# Run smoke tests
+python smoke_tests/smoke_tests.py
+
+# Check code quality (matches CI)
+ruff check .
+mypy agent_validator cli
+
+# Verify package builds
+python -m build
+```
+
+#### 4. **Commit and Push Changes**
+
+```bash
+# Commit version and changelog updates
+git add agent_validator/version.py CHANGELOG.md
+git commit -m "Release v1.0.1"
+git push origin master
+```
+
+#### 5. **Create and Push Git Tag**
+
+```bash
+# Create version tag
+git tag v1.0.1
+
+# Push tag to trigger automated release
+git push origin v1.0.1
+```
+
+**That's it!** 🚀 The CI/CD pipeline will automatically:
+
+- ✅ Run tests across Python 3.9, 3.10, 3.11, and 3.12
+- ✅ Run linting and type checking
+- ✅ Build the package
+- ✅ Publish to PyPI (if tag starts with `v`)
+
+#### 6. **Verify Release**
+
+After the CI completes (usually 2-3 minutes):
+
+```bash
+# Test installation from PyPI
+pip install agent-validator==1.0.1 --force-reinstall
+
+# Verify functionality
+agent-validator --help
+python -c "import agent_validator; print(agent_validator.__version__)"
+```
+
+#### 7. **Create GitHub Release**
+
+- Go to [GitHub Releases](https://github.com/agent-validator/agent-validator/releases)
+- Click "Create a new release"
+- Select the tag you just pushed
+- Copy the changelog content
+- Publish the release
+
+**Release Checklist:**
+
+- [ ] Version updated in `agent_validator/version.py`
+- [ ] CHANGELOG.md updated
+- [ ] All tests pass locally
+- [ ] Smoke tests pass
+- [ ] Code quality checks pass
+- [ ] Package builds successfully
+- [ ] Changes committed and pushed to master
+- [ ] Git tag created and pushed
+- [ ] CI/CD pipeline completes successfully
+- [ ] Installation from PyPI verified
+- [ ] GitHub release created with changelog
+
+**CI/CD Pipeline Details:**
+
+The `.github/workflows/ci.yml` workflow automatically:
+
+- **Tests**: Runs on Python 3.9, 3.10, 3.11, 3.12
+- **Quality**: Runs `ruff check` and `mypy`
+- **Coverage**: Generates and uploads coverage reports
+- **Publishing**: Automatically publishes to PyPI when a tag starting with `v` is pushed
+- **Security**: Uses GitHub secrets for PyPI authentication
 
 ---
 
