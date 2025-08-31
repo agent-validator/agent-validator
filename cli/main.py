@@ -3,6 +3,7 @@
 import json
 import sys
 import uuid
+from pathlib import Path
 from typing import Any, Optional
 
 import typer
@@ -537,13 +538,13 @@ def dashboard(
         from http.server import BaseHTTPRequestHandler, HTTPServer
 
         class DashboardProxy(BaseHTTPRequestHandler):
-            def do_GET(self):
+            def do_GET(self) -> None:
                 if self.path == "/":
                     # Proxy the dashboard request with proper headers
                     try:
                         req = urllib.request.Request(
                             f"{config.cloud_endpoint}/dashboard",
-                            headers={"license-key": config.license_key},
+                            headers={"license-key": config.license_key or ""},
                         )
 
                         with urllib.request.urlopen(req) as response:
@@ -567,7 +568,7 @@ def dashboard(
                     self.send_response(404)
                     self.end_headers()
 
-            def log_message(self, format, *args):
+            def log_message(self, format: str, *args: Any) -> None:
                 # Suppress logging
                 pass
 

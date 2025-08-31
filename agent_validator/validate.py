@@ -159,7 +159,7 @@ def validate(
         for attempt in range(1, retries + 1):
             try:
                 # Call retry function
-                new_output = retry_fn(original_input, context)
+                new_output = retry_fn(original_input, context)  # type: ignore
 
                 # Parse new output
                 if isinstance(new_output, str):
@@ -350,7 +350,7 @@ def _validate_against_schema(
 
         return result
 
-    return data
+    return data  # type: ignore
 
 
 def _validate_type(
@@ -364,7 +364,12 @@ def _validate_type(
 
     if isinstance(value, expected_type):
         # Apply size limits for strings
-        if expected_type is str and config and len(value) > config.max_str_len:
+        if (
+            expected_type is str
+            and config
+            and isinstance(value, str)
+            and len(value) > config.max_str_len
+        ):
             raise ValidationError(
                 path=path,
                 reason="size_limit",

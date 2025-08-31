@@ -1,7 +1,7 @@
 """Configuration management for agent_validator."""
 
 import os
-import tomllib
+import tomllib  # type: ignore
 from pathlib import Path
 
 from .typing_ import Config

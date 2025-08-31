@@ -6,6 +6,8 @@ from typing import Any, Optional
 from .errors import SchemaError
 from .typing_ import ValidatorFunction
 
+SchemaDict = dict[str, Any]
+
 
 class Schema:
     """Schema definition for validating agent outputs."""
@@ -70,9 +72,9 @@ class Schema:
             "validators": list(self.validators.keys()) if self.validators else None,
         }
 
-    def _serialize_schema_dict(self, schema_dict: dict[str, Any]) -> dict[str, Any]:
+    def _serialize_schema_dict(self, schema_dict: SchemaDict) -> dict[str, Any]:
         """Serialize schema dict with type names instead of Python types."""
-        serialized = {}
+        serialized: dict[str, Any] = {}
         for key, value in schema_dict.items():
             if value is None:
                 serialized[key] = None
@@ -117,9 +119,9 @@ class Schema:
                 serialized[key] = str(value)
         return serialized
 
-    def _deserialize_schema_dict(self, schema_dict: dict[str, Any]) -> dict[str, Any]:
+    def _deserialize_schema_dict(self, schema_dict: dict[str, Any]) -> SchemaDict:
         """Deserialize schema dict with string type names to Python types."""
-        deserialized = {}
+        deserialized: SchemaDict = {}
         for key, value in schema_dict.items():
             if value is None:
                 deserialized[key] = None
@@ -221,11 +223,9 @@ class Schema:
         )
 
     @classmethod
-    def _deserialize_schema_dict_static(
-        cls, schema_dict: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _deserialize_schema_dict_static(cls, schema_dict: dict[str, Any]) -> SchemaDict:
         """Static method to deserialize schema dict with string type names to Python types."""
-        deserialized = {}
+        deserialized: SchemaDict = {}
         for key, value in schema_dict.items():
             if value is None:
                 deserialized[key] = None

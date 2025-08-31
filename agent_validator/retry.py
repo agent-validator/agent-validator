@@ -61,7 +61,10 @@ def retry_with_backoff(
 
             time.sleep(total_delay)
 
-    raise last_exception
+    if last_exception is not None:
+        raise last_exception
+    else:
+        raise Exception("Retry failed with no exception")
 
 
 def create_retry_function(
@@ -87,8 +90,8 @@ def create_retry_function(
         Wrapped function with retry logic
     """
 
-    def retry_wrapper(prompt: str, context: dict) -> Any:
-        def attempt():
+    def retry_wrapper(prompt: str, context: dict[str, Any]) -> Any:
+        def attempt() -> Any:
             return original_fn(prompt, context)
 
         return retry_with_backoff(

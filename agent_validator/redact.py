@@ -53,8 +53,6 @@ class Redactor:
         Returns:
             Redacted text
         """
-        if not isinstance(text, str):
-            return text
 
         redacted = text
 
@@ -131,6 +129,7 @@ class Redactor:
         elif isinstance(data, str):
             return self.redact_text(data)
         else:
+            # For any other type (int, float, bool, etc.), return as-is
             return data
 
     def _redact_email(self, email: str) -> str:
