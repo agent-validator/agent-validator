@@ -3,7 +3,10 @@
 import os
 from pathlib import Path
 
-import tomllib
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
 
 from .typing_ import Config
 
