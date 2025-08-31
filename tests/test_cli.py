@@ -80,7 +80,7 @@ def test_test_command_failure(runner, temp_schema_file):
         result = runner.invoke(app, ["test", temp_schema_file, invalid_input_file])
 
         assert result.exit_code == 2
-        assert "✗ Validation failed" in result.stdout
+        assert "✗ Validation failed" in result.stderr
     finally:
         Path(invalid_input_file).unlink(missing_ok=True)
 
