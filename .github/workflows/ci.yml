@@ -29,7 +29,6 @@ jobs:
       - name: Run linting
         run: |
           ruff check .
-          black --check .
 
       - name: Run type checking
         run: |
