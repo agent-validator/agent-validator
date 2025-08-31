@@ -5,30 +5,25 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agent-validator"
 version = "0.1.0"
-description = "A simple drop-in tool to validate LLM/agent outputs against schemas"
+description = "A library for validating agent outputs against schemas"
 readme = "README.md"
+requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Agent Validator Contributors", email = "contributors@agentvalidator.com"}
+    {name = "Your Name", email = "your.email@example.com"}
 ]
-maintainers = [
-    {name = "Agent Validator Maintainers", email = "maintainers@agentvalidator.com"}
-]
-keywords = ["validation", "llm", "agent", "schema", "json"]
+keywords = ["validation", "schema", "agent", "ai"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Software Development :: Testing",
 ]
-requires-python = ">=3.9"
 dependencies = [
     "requests>=2.25.0",
     "typer>=0.9.0",
@@ -38,11 +33,9 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "hypothesis>=6.0.0",
-    "mypy>=1.0.0",
-    "ruff>=0.1.0",
     "black>=23.0.0",
-    "isort>=5.12.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
 ]
 
 [project.scripts]
@@ -62,7 +55,7 @@ include = ["agent_validator*", "cli*"]
 "*" = ["py.typed"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -78,15 +71,16 @@ strict_equality = true
 
 [[tool.mypy.overrides]]
 module = [
-    "tests.*",
-    "examples.*",
+    "tomllib",
+    "tomli",
 ]
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
+ignore_missing_imports = true
 
 [tool.ruff]
-target-version = "py39"
 line-length = 88
+target-version = "py38"
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -102,13 +96,13 @@ ignore = [
     "C901",  # too complex
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/*" = ["B011"]
 
 [tool.black]
-target-version = ['py39']
 line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -121,6 +115,7 @@ extend-exclude = '''
   | \.venv
   | build
   | dist
+  | venv
 )/
 '''
 
