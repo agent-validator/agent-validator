@@ -13,16 +13,6 @@ from typer.testing import CliRunner
 from cli.main import app
 
 
-def assert_error_in_output(result, error_message):
-    """Helper to check for error messages in either stdout or stderr."""
-    if sys.version_info < (3, 10):
-        # Python 3.9: stderr is captured separately
-        assert error_message in result.stderr
-    else:
-        # Python 3.10+: stdout and stderr are mixed
-        assert error_message in result.stdout
-
-
 @pytest.fixture
 def runner():
     # Use mix_stderr=False for Python 3.9, default for newer versions
@@ -90,7 +80,7 @@ def test_test_command_failure(runner, temp_schema_file):
         result = runner.invoke(app, ["test", temp_schema_file, invalid_input_file])
 
         assert result.exit_code == 2
-        assert_error_in_output(result, "✗ Validation failed")
+        assert "✗ Validation failed" in result.stdout
     finally:
         Path(invalid_input_file).unlink(missing_ok=True)
 
@@ -112,7 +102,7 @@ def test_test_command_strict_mode(runner, temp_schema_file):
         )
 
         assert result.exit_code == 2
-        assert_error_in_output(result, "✗ Validation failed")
+        assert "✗ Validation failed" in result.stderr
     finally:
         Path(input_file).unlink(missing_ok=True)
 
