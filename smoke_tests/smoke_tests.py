@@ -1104,7 +1104,7 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
                 # Try to revoke webhook on server
                 self._run_cli_command(["webhook", "--revoke"])
                 print("✅ Cleared existing webhook configuration on server")
-            except:
+            except:  # noqa: E722
                 # Ignore errors if no webhook was configured on server
                 pass
 
@@ -1112,7 +1112,7 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
             try:
                 self._run_cli_command(["config", "--set-webhook-secret", ""])
                 print("✅ Cleared local webhook configuration")
-            except:
+            except:  # noqa: E722
                 # Ignore errors if config command fails
                 pass
 
@@ -1173,8 +1173,8 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
             print("✅ Webhook status correctly shows no secret after revocation")
 
         except SmokeTestError as e:
-            if (self._string_in_output(str(e), "Cannot connect") or 
-                self._string_in_output(str(e), "Failed to fetch") or 
+            if (self._string_in_output(str(e), "Cannot connect") or
+                self._string_in_output(str(e), "Failed to fetch") or
                 self._string_in_output(str(e), "timed out") or
                 self._string_in_output(str(e), "Failed to communicate with API")):
                 print("⚠️  Webhook functionality not available (backend may not be running)")
