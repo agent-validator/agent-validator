@@ -20,7 +20,9 @@ def parse_validation_mode(value: str) -> ValidationMode:
     elif value_lower == "coerce":
         return ValidationMode.COERCE
     else:
-        raise ValueError(f"Invalid validation mode: {value}. Must be 'strict' or 'coerce'")
+        raise ValueError(
+            f"Invalid validation mode: {value}. Must be 'strict' or 'coerce'"
+        )
 
 
 def convert_string_schema_to_types(schema_data: Any) -> Any:
@@ -80,9 +82,15 @@ def logs(
         return
 
     # Print table header
-    typer.echo("┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┬─────────┬─────────┐")
-    typer.echo("│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │ Errors  │ Size    │")
-    typer.echo("├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┼─────────┼─────────┤")
+    typer.echo(
+        "┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┬─────────┬─────────┐"
+    )
+    typer.echo(
+        "│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │ Errors  │ Size    │"
+    )
+    typer.echo(
+        "├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┼─────────┼─────────┤"
+    )
 
     for entry in entries:
         ts = entry.get("ts", "unknown")
@@ -95,7 +103,11 @@ def logs(
         # Format correlation ID - show "none" if missing, truncate if too long
         if correlation_id:
             # Truncate long correlation IDs for readability
-            display_id = correlation_id[:8] + "..." if len(correlation_id) > 12 else correlation_id
+            display_id = (
+                correlation_id[:8] + "..."
+                if len(correlation_id) > 12
+                else correlation_id
+            )
         else:
             display_id = "none"
 
@@ -104,7 +116,8 @@ def logs(
             try:
                 # Parse ISO timestamp and format it nicely
                 from datetime import datetime
-                dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+
+                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
                 formatted_ts = dt.strftime("%Y-%m-%d %H:%M:%S")
             except (ValueError, TypeError):
                 formatted_ts = ts
@@ -117,7 +130,7 @@ def logs(
 
         # Calculate output size from output_sample
         output_sample = entry.get("output_sample", "")
-        output_size = len(output_sample.encode('utf-8')) if output_sample else 0
+        output_size = len(output_sample.encode("utf-8")) if output_sample else 0
 
         # Format size (show KB if > 1KB)
         if output_size > 1024:
@@ -126,10 +139,14 @@ def logs(
             size_display = f"{output_size}B"
 
         # Print table row
-        typer.echo(f"│ {formatted_ts:<35} │ {valid:>6} │ {display_id:>11} │ {mode:>7} │ {attempts:>8} │ {duration_ms:>9}ms │ {error_count:>7} │ {size_display:>7} │")
+        typer.echo(
+            f"│ {formatted_ts:<35} │ {valid:>6} │ {display_id:>11} │ {mode:>7} │ {attempts:>8} │ {duration_ms:>9}ms │ {error_count:>7} │ {size_display:>7} │"
+        )
 
     # Print table footer
-    typer.echo("└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┴─────────┴─────────┘")
+    typer.echo(
+        "└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┴─────────┴─────────┘"
+    )
 
 
 @app.command()
@@ -153,7 +170,9 @@ def test(
         if "schema" in schema_data:
             # Wrapped format: {"schema": {...}}
             # Convert string types in the nested schema
-            converted_schema_dict = convert_string_schema_to_types(schema_data["schema"])
+            converted_schema_dict = convert_string_schema_to_types(
+                schema_data["schema"]
+            )
             schema = Schema(converted_schema_dict)
         else:
             # Direct format: {...} - convert string types to Python types
@@ -186,12 +205,20 @@ def id() -> None:
 @app.command()
 def config(
     show: bool = typer.Option(False, "--show", help="Show current configuration"),
-    show_secrets: bool = typer.Option(False, "--show-secrets", help="Show sensitive values (license key, webhook secret)"),
-    set_license_key: Optional[str] = typer.Option(None, "--set-license-key", help="Set license key"),
+    show_secrets: bool = typer.Option(
+        False,
+        "--show-secrets",
+        help="Show sensitive values (license key, webhook secret)",
+    ),
+    set_license_key: Optional[str] = typer.Option(
+        None, "--set-license-key", help="Set license key"
+    ),
     set_endpoint: Optional[str] = typer.Option(
         None, "--set-endpoint", help="Set cloud endpoint"
     ),
-    set_webhook_secret: Optional[str] = typer.Option(None, "--set-webhook-secret", help="Set webhook secret"),
+    set_webhook_secret: Optional[str] = typer.Option(
+        None, "--set-webhook-secret", help="Set webhook secret"
+    ),
     set_log_to_cloud: Optional[bool] = typer.Option(
         None, "--set-log-to-cloud", help="Enable/disable cloud logging", is_flag=True
     ),
@@ -216,7 +243,9 @@ def config(
             typer.echo(f"  webhook_secret: {config.webhook_secret or 'not set'}")
         else:
             typer.echo(f"  license_key: {'***' if config.license_key else 'not set'}")
-            typer.echo(f"  webhook_secret: {'***' if config.webhook_secret else 'not set'}")
+            typer.echo(
+                f"  webhook_secret: {'***' if config.webhook_secret else 'not set'}"
+            )
         return
 
     if set_license_key is not None:
@@ -241,17 +270,27 @@ def config(
 
 @app.command()
 def webhook(
-    generate: bool = typer.Option(False, "--generate", "-g", help="Generate a new webhook secret"),
-    status: bool = typer.Option(False, "--status", "-s", help="Check webhook secret status"),
+    generate: bool = typer.Option(
+        False, "--generate", "-g", help="Generate a new webhook secret"
+    ),
+    status: bool = typer.Option(
+        False, "--status", "-s", help="Check webhook secret status"
+    ),
     show: bool = typer.Option(False, "--show", help="Show the current webhook secret"),
-    revoke: bool = typer.Option(False, "--revoke", "-r", help="Revoke current webhook secret"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force generation even if secret exists"),
+    revoke: bool = typer.Option(
+        False, "--revoke", "-r", help="Revoke current webhook secret"
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Force generation even if secret exists"
+    ),
 ) -> None:
     """Manage webhook secrets for HMAC signature validation."""
     config = get_config()
 
     if not config.license_key:
-        typer.echo("❌ No license key configured. Run 'agent-validator config --set-license-key <key>' first.")
+        typer.echo(
+            "❌ No license key configured. Run 'agent-validator config --set-license-key <key>' first."
+        )
         return
 
     try:
@@ -266,12 +305,14 @@ def webhook(
                 url,
                 headers={"license-key": config.license_key},
                 params=params,
-                timeout=10
+                timeout=10,
             )
 
             if response.status_code == 409 and not force:
                 typer.echo("⚠️  Webhook secret already exists.")
-                typer.echo("   Use --force to generate a new one (this will invalidate the old secret).")
+                typer.echo(
+                    "   Use --force to generate a new one (this will invalidate the old secret)."
+                )
                 return
 
             response.raise_for_status()
@@ -287,20 +328,28 @@ def webhook(
             if config.webhook_secret:
                 typer.echo("⚠️  You already have a webhook secret configured locally.")
                 typer.echo("   This will overwrite your existing webhook secret.")
-                typer.echo("   Your old secret will no longer work for HMAC validation.")
+                typer.echo(
+                    "   Your old secret will no longer work for HMAC validation."
+                )
 
                 # Ask for confirmation
-                confirm = typer.confirm("Do you want to continue and overwrite the existing secret?")
+                confirm = typer.confirm(
+                    "Do you want to continue and overwrite the existing secret?"
+                )
                 if not confirm:
                     typer.echo("❌ Webhook secret generation cancelled.")
                     typer.echo("   You can manually configure the secret later with:")
-                    typer.echo(f"   agent-validator config --set-webhook-secret {data['webhook_secret']}")
+                    typer.echo(
+                        f"   agent-validator config --set-webhook-secret {data['webhook_secret']}"
+                    )
                     return
 
             # Auto-set the webhook secret
-            config.webhook_secret = data['webhook_secret']
+            config.webhook_secret = data["webhook_secret"]
             save_config(config)
-            typer.echo("✅ Webhook secret automatically configured in your local settings.")
+            typer.echo(
+                "✅ Webhook secret automatically configured in your local settings."
+            )
             typer.echo("   You can now use HMAC signatures for enhanced security.")
 
         elif show:
@@ -319,7 +368,7 @@ def webhook(
             response = requests.get(
                 f"{config.cloud_endpoint}/webhooks/status",
                 headers={"license-key": config.license_key},
-                timeout=10
+                timeout=10,
             )
             response.raise_for_status()
             data = response.json()
@@ -336,13 +385,15 @@ def webhook(
             response = requests.delete(
                 f"{config.cloud_endpoint}/webhooks/revoke",
                 headers={"license-key": config.license_key},
-                timeout=10
+                timeout=10,
             )
             response.raise_for_status()
             data = response.json()
 
             typer.echo("🗑️  Webhook secret revoked successfully")
-            typer.echo("   Generate a new one with 'agent-validator webhook --generate' to continue using HMAC signatures")
+            typer.echo(
+                "   Generate a new one with 'agent-validator webhook --generate' to continue using HMAC signatures"
+            )
 
         else:
             # Show help
@@ -351,7 +402,9 @@ def webhook(
             typer.echo("  --status, -s      Check if webhook secret is configured")
             typer.echo("  --show            Show the current webhook secret")
             typer.echo("  --revoke, -r      Revoke current webhook secret")
-            typer.echo("  --force, -f       Force generation (overwrites existing secret)")
+            typer.echo(
+                "  --force, -f       Force generation (overwrites existing secret)"
+            )
 
     except requests.exceptions.RequestException as e:
         typer.echo(f"❌ Failed to communicate with API: {e}")
@@ -366,7 +419,9 @@ def cloud_logs(
     config = get_config()
 
     if not config.license_key:
-        typer.echo("❌ No license key configured. Run 'agent-validator config --set-license-key <key>' first.")
+        typer.echo(
+            "❌ No license key configured. Run 'agent-validator config --set-license-key <key>' first."
+        )
         return
 
     try:
@@ -375,7 +430,7 @@ def cloud_logs(
         response = requests.get(
             f"{config.cloud_endpoint}/logs?limit={n}",
             headers={"license-key": config.license_key},
-            timeout=10
+            timeout=10,
         )
         response.raise_for_status()
 
@@ -385,9 +440,15 @@ def cloud_logs(
             return
 
         # Print table header
-        typer.echo("┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┬─────────┬─────────┐")
-        typer.echo("│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │ Errors  │ Size    │")
-        typer.echo("├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┼─────────┼─────────┤")
+        typer.echo(
+            "┌─────────────────────────────────────┬────────┬─────────────┬─────────┬──────────┬─────────────┬─────────┬─────────┐"
+        )
+        typer.echo(
+            "│ Timestamp                           │ Status │ Correlation │ Mode    │ Attempts │ Duration    │ Errors  │ Size    │"
+        )
+        typer.echo(
+            "├─────────────────────────────────────┼────────┼─────────────┼─────────┼──────────┼─────────────┼─────────┼─────────┤"
+        )
 
         for log in logs:
             ts = log.get("ts", "unknown")
@@ -400,7 +461,11 @@ def cloud_logs(
             # Format correlation ID - show "none" if missing, truncate if too long
             if correlation_id and correlation_id != "unknown":
                 # Truncate long correlation IDs for readability
-                display_id = correlation_id[:8] + "..." if len(correlation_id) > 12 else correlation_id
+                display_id = (
+                    correlation_id[:8] + "..."
+                    if len(correlation_id) > 12
+                    else correlation_id
+                )
             else:
                 display_id = "none"
 
@@ -409,7 +474,8 @@ def cloud_logs(
                 try:
                     # Parse ISO timestamp and format it nicely
                     from datetime import datetime
-                    dt = datetime.fromisoformat(ts.replace('Z', '+00:00'))
+
+                    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
                     formatted_ts = dt.strftime("%Y-%m-%d %H:%M:%S")
                 except (ValueError, TypeError):
                     formatted_ts = ts
@@ -422,7 +488,7 @@ def cloud_logs(
 
             # Calculate output size from output_sample
             output_sample = log.get("output_sample", "")
-            output_size = len(output_sample.encode('utf-8')) if output_sample else 0
+            output_size = len(output_sample.encode("utf-8")) if output_sample else 0
 
             # Format size (show KB if > 1KB)
             if output_size > 1024:
@@ -431,13 +497,19 @@ def cloud_logs(
                 size_display = f"{output_size}B"
 
             # Print table row
-            typer.echo(f"│ {formatted_ts:<35} │ {valid:>6} │ {display_id:>11} │ {mode:>7} │ {attempts:>8} │ {duration_ms:>9}ms │ {error_count:>7} │ {size_display:>7} │")
+            typer.echo(
+                f"│ {formatted_ts:<35} │ {valid:>6} │ {display_id:>11} │ {mode:>7} │ {attempts:>8} │ {duration_ms:>9}ms │ {error_count:>7} │ {size_display:>7} │"
+            )
 
         # Print table footer
-        typer.echo("└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┴─────────┴─────────┘")
+        typer.echo(
+            "└─────────────────────────────────────┴────────┴─────────────┴─────────┴──────────┴─────────────┴─────────┴─────────┘"
+        )
 
     except requests.exceptions.ConnectionError:
-        typer.echo(f"❌ Cannot connect to {config.cloud_endpoint}. Is the server running?")
+        typer.echo(
+            f"❌ Cannot connect to {config.cloud_endpoint}. Is the server running?"
+        )
     except requests.exceptions.RequestException as e:
         typer.echo(f"❌ Failed to fetch cloud logs: {e}")
 
@@ -452,7 +524,9 @@ def dashboard(
     config = get_config()
 
     if not config.license_key:
-        typer.echo("❌ No license key configured. Run 'agent-validator config --set-license-key <key>' first.")
+        typer.echo(
+            "❌ No license key configured. Run 'agent-validator config --set-license-key <key>' first."
+        )
         return
 
     try:
@@ -464,23 +538,23 @@ def dashboard(
 
         class DashboardProxy(BaseHTTPRequestHandler):
             def do_GET(self):
-                if self.path == '/':
+                if self.path == "/":
                     # Proxy the dashboard request with proper headers
                     try:
                         req = urllib.request.Request(
                             f"{config.cloud_endpoint}/dashboard",
-                            headers={"license-key": config.license_key}
+                            headers={"license-key": config.license_key},
                         )
 
                         with urllib.request.urlopen(req) as response:
                             content = response.read()
                             self.send_response(200)
-                            self.send_header('Content-type', 'text/html')
+                            self.send_header("Content-type", "text/html")
                             self.end_headers()
                             self.wfile.write(content)
                     except Exception as e:
                         self.send_response(500)
-                        self.send_header('Content-type', 'text/html')
+                        self.send_header("Content-type", "text/html")
                         self.end_headers()
                         error_html = f"""
                         <html><body>
@@ -498,7 +572,7 @@ def dashboard(
                 pass
 
         # Start local proxy server
-        server = HTTPServer(('localhost', port), DashboardProxy)
+        server = HTTPServer(("localhost", port), DashboardProxy)
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.daemon = True
         server_thread.start()
@@ -511,6 +585,7 @@ def dashboard(
         if open_browser:
             try:
                 import webbrowser
+
                 # Give server a moment to start
                 time.sleep(0.5)
                 webbrowser.open(local_url)

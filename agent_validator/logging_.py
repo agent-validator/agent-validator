@@ -122,9 +122,7 @@ def _log_to_cloud(log_entry: dict[str, Any], config: Any) -> None:
         import hmac
 
         signature = hmac.new(
-            config.webhook_secret.encode(),
-            payload.encode(),
-            hashlib.sha256
+            config.webhook_secret.encode(), payload.encode(), hashlib.sha256
         ).hexdigest()
         headers["x-signature"] = signature
 

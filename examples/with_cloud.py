@@ -8,16 +8,15 @@ from agent_validator import Config, Schema, ValidationMode, validate
 
 def call_agent(prompt: str, context: dict) -> str:
     """Mock agent function that returns structured data."""
-    return json.dumps({
-        "name": "Alice Smith",
-        "age": "25",  # String that needs coercion
-        "email": "alice@example.com",
-        "is_active": "true",  # String that needs coercion
-        "preferences": {
-            "theme": "dark",
-            "notifications": True
+    return json.dumps(
+        {
+            "name": "Alice Smith",
+            "age": "25",  # String that needs coercion
+            "email": "alice@example.com",
+            "is_active": "true",  # String that needs coercion
+            "preferences": {"theme": "dark", "notifications": True},
         }
-    })
+    )
 
 
 def main():
@@ -25,20 +24,21 @@ def main():
     config = Config(
         log_to_cloud=True,
         license_key=os.getenv("AGENT_VALIDATOR_LICENSE_KEY"),
-        cloud_endpoint=os.getenv("AGENT_VALIDATOR_ENDPOINT", "https://api.agentvalidator.dev")
+        cloud_endpoint=os.getenv(
+            "AGENT_VALIDATOR_ENDPOINT", "https://api.agentvalidator.dev"
+        ),
     )
 
     # Define schema with nested structure
-    schema = Schema({
-        "name": str,
-        "age": int,
-        "email": str,
-        "is_active": bool,
-        "preferences": {
-            "theme": str,
-            "notifications": bool
+    schema = Schema(
+        {
+            "name": str,
+            "age": int,
+            "email": str,
+            "is_active": bool,
+            "preferences": {"theme": str, "notifications": bool},
         }
-    })
+    )
 
     # Mock agent output
     agent_output = call_agent("Generate user profile", {"task_id": "456"})
@@ -57,9 +57,9 @@ def main():
             context={
                 "task_id": "456",
                 "user_id": "user_123",
-                "environment": "production"
+                "environment": "production",
             },
-            config=config
+            config=config,
         )
 
         print("✓ Validation successful!")

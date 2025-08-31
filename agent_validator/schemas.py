@@ -107,7 +107,12 @@ class Schema:
                     else:
                         serialized[key] = [str(element)]
                 else:
-                    serialized[key] = [self._serialize_schema_dict(item) if isinstance(item, dict) else str(item) for item in value]
+                    serialized[key] = [
+                        self._serialize_schema_dict(item)
+                        if isinstance(item, dict)
+                        else str(item)
+                        for item in value
+                    ]
             else:
                 serialized[key] = str(value)
         return serialized
@@ -159,7 +164,12 @@ class Schema:
                     else:
                         deserialized[key] = [element]
                 else:
-                    deserialized[key] = [self._deserialize_schema_dict(item) if isinstance(item, dict) else item for item in value]
+                    deserialized[key] = [
+                        self._deserialize_schema_dict(item)
+                        if isinstance(item, dict)
+                        else item
+                        for item in value
+                    ]
             else:
                 deserialized[key] = value
         return deserialized
@@ -183,7 +193,21 @@ class Schema:
         if isinstance(schema_dict, dict):
             # Check if any values are strings that look like type names
             has_string_types = any(
-                isinstance(v, str) and v.lower() in ["string", "integer", "int", "float", "number", "boolean", "bool", "list", "array", "object", "dict"]
+                isinstance(v, str)
+                and v.lower()
+                in [
+                    "string",
+                    "integer",
+                    "int",
+                    "float",
+                    "number",
+                    "boolean",
+                    "bool",
+                    "list",
+                    "array",
+                    "object",
+                    "dict",
+                ]
                 for v in schema_dict.values()
             )
             if has_string_types:
@@ -197,7 +221,9 @@ class Schema:
         )
 
     @classmethod
-    def _deserialize_schema_dict_static(cls, schema_dict: dict[str, Any]) -> dict[str, Any]:
+    def _deserialize_schema_dict_static(
+        cls, schema_dict: dict[str, Any]
+    ) -> dict[str, Any]:
         """Static method to deserialize schema dict with string type names to Python types."""
         deserialized = {}
         for key, value in schema_dict.items():
@@ -240,11 +266,18 @@ class Schema:
                         }
                         deserialized[key] = [type_map.get(element.lower(), element)]
                     elif isinstance(element, dict):
-                        deserialized[key] = [cls._deserialize_schema_dict_static(element)]
+                        deserialized[key] = [
+                            cls._deserialize_schema_dict_static(element)
+                        ]
                     else:
                         deserialized[key] = [element]
                 else:
-                    deserialized[key] = [cls._deserialize_schema_dict_static(item) if isinstance(item, dict) else item for item in value]
+                    deserialized[key] = [
+                        cls._deserialize_schema_dict_static(item)
+                        if isinstance(item, dict)
+                        else item
+                        for item in value
+                    ]
             else:
                 deserialized[key] = value
         return deserialized

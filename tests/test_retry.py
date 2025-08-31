@@ -66,12 +66,7 @@ def test_retry_backoff_timing():
             raise ValueError("Temporary failure")
         return "success"
 
-    result = retry_with_backoff(
-        test_func,
-        max_retries=3,
-        base_delay=0.1,
-        factor=2.0
-    )
+    result = retry_with_backoff(test_func, max_retries=3, base_delay=0.1, factor=2.0)
 
     end_time = time.time()
     duration = end_time - start_time
@@ -84,6 +79,7 @@ def test_retry_backoff_timing():
 
 def test_retry_timeout():
     """Test retry with timeout."""
+
     def test_func():
         time.sleep(0.2)  # Sleep longer than timeout
         return "success"
@@ -107,9 +103,7 @@ def test_create_retry_function():
         return {"result": "success"}
 
     retry_fn = create_retry_function(
-        original_fn,
-        max_retries=2,
-        base_delay=0.01  # Short delay for testing
+        original_fn, max_retries=2, base_delay=0.01  # Short delay for testing
     )
 
     result = retry_fn("test prompt", {"context": "test"})
@@ -120,6 +114,7 @@ def test_create_retry_function():
 
 def test_retry_function_preserves_arguments():
     """Test that retry function preserves arguments."""
+
     def original_fn(prompt: str, context: dict):
         return {"prompt": prompt, "context": context}
 
@@ -163,7 +158,7 @@ def test_retry_max_delay():
         max_retries=3,
         base_delay=1.0,
         factor=2.0,
-        max_delay=1.5  # Cap at 1.5s
+        max_delay=1.5,  # Cap at 1.5s
     )
 
     end_time = time.time()

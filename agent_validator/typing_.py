@@ -7,6 +7,7 @@ from typing import Any, Callable, Optional, Union
 
 class ValidationMode(Enum):
     """Validation modes for schema validation."""
+
     STRICT = "strict"  # No coercion
     COERCE = "coerce"  # Safe coercions like "42" -> 42
 
@@ -14,6 +15,7 @@ class ValidationMode(Enum):
 @dataclass
 class Config:
     """Configuration for validation and logging."""
+
     max_output_bytes: int = 131072
     max_str_len: int = 8192
     max_list_len: int = 2048

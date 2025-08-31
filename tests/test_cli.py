@@ -19,12 +19,7 @@ def runner():
 
 @pytest.fixture
 def temp_schema_file():
-    schema = {
-        "schema": {
-            "name": "string",
-            "age": "integer"
-        }
-    }
+    schema = {"schema": {"name": "string", "age": "integer"}}
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(schema, f)
@@ -37,10 +32,7 @@ def temp_schema_file():
 
 @pytest.fixture
 def temp_input_file():
-    data = {
-        "name": "John Doe",
-        "age": 30
-    }
+    data = {"name": "John Doe", "age": 30}
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(data, f)
@@ -100,7 +92,9 @@ def test_test_command_strict_mode(runner, temp_schema_file):
         input_file = f.name
 
     try:
-        result = runner.invoke(app, ["test", temp_schema_file, input_file, "--mode", "STRICT"])
+        result = runner.invoke(
+            app, ["test", temp_schema_file, input_file, "--mode", "STRICT"]
+        )
 
         assert result.exit_code == 2
         assert "✗ Validation failed" in result.stderr
@@ -120,7 +114,9 @@ def test_test_command_coerce_mode(runner, temp_schema_file):
         input_file = f.name
 
     try:
-        result = runner.invoke(app, ["test", temp_schema_file, input_file, "--mode", "COERCE"])
+        result = runner.invoke(
+            app, ["test", temp_schema_file, input_file, "--mode", "COERCE"]
+        )
 
         assert result.exit_code == 0
         assert "✓ Validation successful" in result.stdout
@@ -149,7 +145,7 @@ def test_logs_command_with_logs(mock_get_logs, runner):
             "valid": True,
             "mode": "STRICT",
             "attempts": 1,
-            "duration_ms": 100
+            "duration_ms": 100,
         }
     ]
     mock_get_logs.return_value = mock_logs
@@ -226,7 +222,9 @@ def test_config_command_set_endpoint(mock_save_config, mock_get_config, runner):
     config = Config()
     mock_get_config.return_value = config
 
-    result = runner.invoke(app, ["config", "--set-endpoint", "https://test.example.com"])
+    result = runner.invoke(
+        app, ["config", "--set-endpoint", "https://test.example.com"]
+    )
 
     assert result.exit_code == 0
     assert "Cloud endpoint updated." in result.stdout

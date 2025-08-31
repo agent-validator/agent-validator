@@ -61,20 +61,38 @@ class Redactor:
         # Process patterns in a specific order to avoid conflicts
         # Start with specific patterns first
         if "email" in self.compiled_patterns:
-            redacted = self.compiled_patterns["email"].sub(lambda m: self._redact_email(m.group(0)), redacted)
+            redacted = self.compiled_patterns["email"].sub(
+                lambda m: self._redact_email(m.group(0)), redacted
+            )
 
         if "phone_value" in self.compiled_patterns:
-            redacted = self.compiled_patterns["phone_value"].sub(lambda m: self._redact_phone(m.group(0)), redacted)
+            redacted = self.compiled_patterns["phone_value"].sub(
+                lambda m: self._redact_phone(m.group(0)), redacted
+            )
 
         if "ssn" in self.compiled_patterns:
-            redacted = self.compiled_patterns["ssn"].sub(lambda m: self._redact_ssn(m.group(0)), redacted)
+            redacted = self.compiled_patterns["ssn"].sub(
+                lambda m: self._redact_ssn(m.group(0)), redacted
+            )
 
         if "credit_card" in self.compiled_patterns:
-            redacted = self.compiled_patterns["credit_card"].sub(lambda m: self._redact_credit_card(m.group(0)), redacted)
+            redacted = self.compiled_patterns["credit_card"].sub(
+                lambda m: self._redact_credit_card(m.group(0)), redacted
+            )
 
         # Then process general patterns
         for pattern_name, pattern in self.compiled_patterns.items():
-            if pattern_name in ["license_key", "license_key_value", "api_key", "jwt", "jwt_value", "password", "password_value", "secret", "phone"] or pattern_name.startswith("custom_"):
+            if pattern_name in [
+                "license_key",
+                "license_key_value",
+                "api_key",
+                "jwt",
+                "jwt_value",
+                "password",
+                "password_value",
+                "secret",
+                "phone",
+            ] or pattern_name.startswith("custom_"):
                 # Replace the entire match
                 redacted = pattern.sub("[REDACTED]", redacted)
 
@@ -100,17 +118,16 @@ class Redactor:
                 # Special handling for password fields
                 if isinstance(value, str) and "password" in key.lower():
                     if "password_value" in self.compiled_patterns:
-                        result[key] = self.compiled_patterns["password_value"].sub("[REDACTED]", value)
+                        result[key] = self.compiled_patterns["password_value"].sub(
+                            "[REDACTED]", value
+                        )
                     else:
                         result[key] = self.redact_dict(value, max_depth - 1)
                 else:
                     result[key] = self.redact_dict(value, max_depth - 1)
             return result
         elif isinstance(data, list):
-            return [
-                self.redact_dict(item, max_depth - 1)
-                for item in data
-            ]
+            return [self.redact_dict(item, max_depth - 1) for item in data]
         elif isinstance(data, str):
             return self.redact_text(data)
         else:
@@ -157,7 +174,9 @@ class Redactor:
 _default_redactor = Redactor()
 
 
-def redact_sensitive_data(data: Any, patterns: Optional[dict[str, str]] = None, max_depth: int = 10) -> Any:
+def redact_sensitive_data(
+    data: Any, patterns: Optional[dict[str, str]] = None, max_depth: int = 10
+) -> Any:
     """
     Redact sensitive data from any data structure.
 

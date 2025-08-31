@@ -20,8 +20,10 @@ from typing import Optional
 
 SMOKE_TEST_OUTPUT_LINES = 60
 
+
 class SmokeTestError(Exception):
     """Custom exception for smoke test failures."""
+
     pass
 
 
@@ -89,10 +91,17 @@ class AgentValidatorSmokeTester:
         try:
             # Install in editable mode with dev dependencies using python -m pip
             result = subprocess.run(
-                [str(self.python_path), "-m", "pip", "install", "-e", f"{parent_dir}[dev]"],
+                [
+                    str(self.python_path),
+                    "-m",
+                    "pip",
+                    "install",
+                    "-e",
+                    f"{parent_dir}[dev]",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=120
+                timeout=120,
             )
 
             if result.returncode != 0:
@@ -119,13 +128,10 @@ class AgentValidatorSmokeTester:
             "email": "string",
             "is_active": "boolean",
             "tags": ["string"],
-            "metadata": {
-                "source": "string",
-                "version": "string"
-            }
+            "metadata": {"source": "string", "version": "string"},
         }
 
-        with open(self.test_schema_file, 'w') as f:
+        with open(self.test_schema_file, "w") as f:
             json.dump(schema, f, indent=2)
 
         # Valid input
@@ -135,13 +141,10 @@ class AgentValidatorSmokeTester:
             "email": "john@example.com",
             "is_active": True,
             "tags": ["user", "active"],
-            "metadata": {
-                "source": "api",
-                "version": "1.0.0"
-            }
+            "metadata": {"source": "api", "version": "1.0.0"},
         }
 
-        with open(self.test_input_file, 'w') as f:
+        with open(self.test_input_file, "w") as f:
             json.dump(valid_input, f, indent=2)
 
         # Invalid input (missing required fields)
@@ -149,10 +152,10 @@ class AgentValidatorSmokeTester:
             "name": "John Doe",
             "age": "thirty",  # Should be int
             "email": "invalid-email",  # Invalid email format
-            "is_active": "yes"  # Should be boolean
+            "is_active": "yes",  # Should be boolean
         }
 
-        with open(self.test_invalid_input_file, 'w') as f:
+        with open(self.test_invalid_input_file, "w") as f:
             json.dump(invalid_input, f, indent=2)
 
         print("✅ Test files created successfully")
@@ -170,7 +173,7 @@ class AgentValidatorSmokeTester:
                 [str(self.cli_path), "config", "--set-endpoint", self.backend_url],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -185,10 +188,7 @@ class AgentValidatorSmokeTester:
         """Run a CLI command in isolated environment and return output."""
         try:
             result = subprocess.run(
-                [str(self.cli_path)] + args,
-                capture_output=True,
-                text=True,
-                timeout=30
+                [str(self.cli_path)] + args, capture_output=True, text=True, timeout=30
             )
 
             if expect_success and result.returncode != 0:
@@ -208,7 +208,9 @@ class AgentValidatorSmokeTester:
         except subprocess.TimeoutExpired:
             raise SmokeTestError(f"CLI command timed out: args={args}") from None
         except FileNotFoundError:
-            raise SmokeTestError(f"agent-validator CLI not found at: {self.cli_path}") from None
+            raise SmokeTestError(
+                f"agent-validator CLI not found at: {self.cli_path}"
+            ) from None
 
     def _string_in_output(self, output: str, string: str) -> bool:
         """Check if a string is in the output."""
@@ -220,10 +222,14 @@ class AgentValidatorSmokeTester:
 
         output = self._run_cli_command(["--help"])
 
-        if not self._string_in_output(output, "validate LLM/agent outputs against schemas"):
+        if not self._string_in_output(
+            output, "validate LLM/agent outputs against schemas"
+        ):
             raise SmokeTestError("CLI help doesn't contain expected description")
 
-        if not self._string_in_output(output, "test") or not self._string_in_output(output, "logs"):
+        if not self._string_in_output(output, "test") or not self._string_in_output(
+            output, "logs"
+        ):
             raise SmokeTestError("CLI help doesn't show expected commands")
 
         print("✅ CLI help working")
@@ -235,7 +241,7 @@ class AgentValidatorSmokeTester:
         output = self._run_cli_command(["id"])
 
         # Should be a UUID
-        if len(output) != 36 or output.count('-') != 4:
+        if len(output) != 36 or output.count("-") != 4:
             raise SmokeTestError(f"Generated ID doesn't look like UUID: {output}")
 
         print("✅ CLI ID generation working")
@@ -270,13 +276,15 @@ class AgentValidatorSmokeTester:
         """Test CLI validation with valid input."""
         print("🔍 Testing CLI validation (success)...")
 
-        output = self._run_cli_command([
-            "test",
-            str(self.test_schema_file),
-            str(self.test_input_file),
-            "--mode", "cOeRce" # Case-insensitive mode
-
-        ])
+        output = self._run_cli_command(
+            [
+                "test",
+                str(self.test_schema_file),
+                str(self.test_input_file),
+                "--mode",
+                "cOeRce",  # Case-insensitive mode
+            ]
+        )
 
         if not self._string_in_output(output, "Validation successful"):
             raise SmokeTestError(f"Validation should have succeeded: {output}")
@@ -293,15 +301,21 @@ class AgentValidatorSmokeTester:
 
         # This should fail with exit code 2
         try:
-            self._run_cli_command([
-                "test",
-                str(self.test_schema_file),
-                str(self.test_invalid_input_file),
-                "--mode", "sTrIct" # Case-insensitive mode
-            ], expect_success=False)
+            self._run_cli_command(
+                [
+                    "test",
+                    str(self.test_schema_file),
+                    str(self.test_invalid_input_file),
+                    "--mode",
+                    "sTrIct",  # Case-insensitive mode
+                ],
+                expect_success=False,
+            )
         except SmokeTestError as e:
             if not self._string_in_output(str(e), "exit code 2"):
-                raise SmokeTestError(f"Expected validation failure with exit code 2: {e}") from e
+                raise SmokeTestError(
+                    f"Expected validation failure with exit code 2: {e}"
+                ) from e
 
         print("✅ CLI validation (failure) working")
 
@@ -314,7 +328,11 @@ class AgentValidatorSmokeTester:
 
         # Should either show logs or "No logs found"
         # Logs output now uses table format with headers
-        if not self._string_in_output(output, "No logs found") and not self._string_in_output(output, "Timestamp") and not self._string_in_output(output, "Status"):
+        if (
+            not self._string_in_output(output, "No logs found")
+            and not self._string_in_output(output, "Timestamp")
+            and not self._string_in_output(output, "Status")
+        ):
             raise SmokeTestError("Logs command output unexpected")
 
         print("✅ CLI logs working")
@@ -326,13 +344,21 @@ class AgentValidatorSmokeTester:
         # This might fail if no license key or server not running, which is expected
         try:
             output = self._run_cli_command(["cloud-logs", "-n", "5"])
-            if not self._string_in_output(output, "No logs found") and not self._string_in_output(output, "Timestamp") and not self._string_in_output(output, "Status"):
+            if (
+                not self._string_in_output(output, "No logs found")
+                and not self._string_in_output(output, "Timestamp")
+                and not self._string_in_output(output, "Status")
+            ):
                 raise SmokeTestError("Cloud logs command output unexpected")
 
             print("✅ CLI cloud logs working (server available)")
         except SmokeTestError as e:
-            if self._string_in_output(str(e), "No license key configured") or self._string_in_output(str(e), "Cannot connect"):
-                print("⚠️  CLI cloud logs not available (expected if no license/server)")
+            if self._string_in_output(
+                str(e), "No license key configured"
+            ) or self._string_in_output(str(e), "Cannot connect"):
+                print(
+                    "⚠️  CLI cloud logs not available (expected if no license/server)"
+                )
             else:
                 raise e
 
@@ -343,7 +369,10 @@ class AgentValidatorSmokeTester:
         try:
             # Test all main imports using the isolated Python
             result = subprocess.run(
-                [str(self.python_path), "-c", """
+                [
+                    str(self.python_path),
+                    "-c",
+                    """
 import sys
 from agent_validator import validate, Schema, ValidationError, ValidationMode, Config, SchemaError, CloudLogError
 
@@ -367,10 +396,11 @@ if result["name"] != "John" or result["age"] != 30:
     sys.exit(1)
 
 print("✅ All library functionality working")
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -388,7 +418,10 @@ print("✅ All library functionality working")
         try:
             # Test validation modes using the isolated Python
             result = subprocess.run(
-                [str(self.python_path), "-c", """
+                [
+                    str(self.python_path),
+                    "-c",
+                    """
 import sys
 from agent_validator import validate, Schema, ValidationMode, ValidationError
 
@@ -424,10 +457,11 @@ if not isinstance(result["score"], float) or result["score"] != 42.5:
     sys.exit(1)
 
 print("✅ Validation modes working")
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -445,7 +479,10 @@ print("✅ Validation modes working")
         try:
             # Test error handling using the isolated Python
             result = subprocess.run(
-                [str(self.python_path), "-c", """
+                [
+                    str(self.python_path),
+                    "-c",
+                    """
 import sys
 from agent_validator import validate, Schema, ValidationError, ValidationMode
 
@@ -474,10 +511,11 @@ except ValidationError:
     pass  # Expected
 
 print("✅ Error handling working")
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -495,7 +533,10 @@ print("✅ Error handling working")
         try:
             # Test configuration using the isolated Python
             result = subprocess.run(
-                [str(self.python_path), "-c", """
+                [
+                    str(self.python_path),
+                    "-c",
+                    """
 import sys
 from agent_validator import Config
 
@@ -523,10 +564,11 @@ if custom_config.license_key != "test-key":
     sys.exit(1)
 
 print("✅ Library configuration working")
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -544,7 +586,10 @@ print("✅ Library configuration working")
         try:
             # Test retry logic using the isolated Python
             result = subprocess.run(
-                [str(self.python_path), "-c", """
+                [
+                    str(self.python_path),
+                    "-c",
+                    """
 import sys
 from agent_validator import validate, Schema, ValidationMode
 
@@ -578,10 +623,11 @@ if result["name"] != "John" or result["age"] != 30:
     sys.exit(1)
 
 print("✅ Retry logic working")
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -599,7 +645,10 @@ print("✅ Retry logic working")
         try:
             # Test logging using the isolated Python
             result = subprocess.run(
-                [str(self.python_path), "-c", """
+                [
+                    str(self.python_path),
+                    "-c",
+                    """
 import sys
 from agent_validator import validate, Schema, ValidationMode
 from agent_validator.logging_ import get_recent_logs, clear_logs
@@ -640,10 +689,11 @@ if "John" not in test_log.get("output_sample", ""):
     sys.exit(1)
 
 print("✅ Logging functionality working")
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -661,6 +711,7 @@ print("✅ Logging functionality working")
         try:
             # Get today's date for log file name
             from datetime import datetime
+
             today = datetime.utcnow().strftime("%Y-%m-%d")
 
             # Check if log directory exists
@@ -703,7 +754,9 @@ print("✅ Logging functionality working")
                 except json.JSONDecodeError:
                     continue
 
-            print(f"✅ Local log files working - found {valid_entries} valid entries, {test_entries} test entries")
+            print(
+                f"✅ Local log files working - found {valid_entries} valid entries, {test_entries} test entries"
+            )
 
         except Exception as e:
             raise SmokeTestError(f"Local log file test failed: {e}") from e
@@ -718,7 +771,10 @@ print("✅ Logging functionality working")
 
             # Simple test with just one sensitive field
             debug_result = subprocess.run(
-                [str(self.python_path), "-c", """
+                [
+                    str(self.python_path),
+                    "-c",
+                    """
 import sys
 import json
 from agent_validator import validate, Schema, ValidationMode
@@ -735,17 +791,21 @@ sensitive_data = {
 result = validate(sensitive_data, schema, mode=ValidationMode.STRICT, context={"test": "debug_redaction"})
 
 print("✅ Debug validation successful")
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if debug_result.returncode != 0:
-                raise SmokeTestError(f"Debug redaction test failed: {debug_result.stderr}")
+                raise SmokeTestError(
+                    f"Debug redaction test failed: {debug_result.stderr}"
+                )
 
             # Check what was actually logged
             from datetime import datetime
+
             today = datetime.utcnow().strftime("%Y-%m-%d")
             log_file = Path.home() / ".agent_validator" / "logs" / f"{today}.jsonl"
 
@@ -755,13 +815,18 @@ print("✅ Debug validation successful")
                     for line in f:
                         try:
                             entry = json.loads(line.strip())
-                            if entry.get("context", {}).get("test") == "debug_redaction":
+                            if (
+                                entry.get("context", {}).get("test")
+                                == "debug_redaction"
+                            ):
                                 output_sample = entry.get("output_sample", "")
                                 if "sk-1234567890abcdef" in output_sample:
                                     print("❌ API key found in log (not redacted)")
                                     # Let's also check if there are any redaction markers
                                     if "[REDACTED]" in output_sample:
-                                        print("🔍 Found [REDACTED] markers in output_sample")
+                                        print(
+                                            "🔍 Found [REDACTED] markers in output_sample"
+                                        )
                                     else:
                                         print("🔍 No [REDACTED] markers found")
                                 else:
@@ -775,7 +840,10 @@ print("✅ Debug validation successful")
 
             # Test validation with sensitive data
             result = subprocess.run(
-                [str(self.python_path), "-c", """
+                [
+                    str(self.python_path),
+                    "-c",
+                    """
 import sys
 from agent_validator import validate, Schema, ValidationMode
 
@@ -806,17 +874,21 @@ if result["config"] != "api_key=sk-1234567890abcdef&jwt=Bearer eyJhbGciOiJIUzI1N
     sys.exit(1)
 
 print("✅ Validation with sensitive data successful")
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
-                raise SmokeTestError(f"Redaction test validation failed: {result.stderr}")
+                raise SmokeTestError(
+                    f"Redaction test validation failed: {result.stderr}"
+                )
 
             # Check log file for redacted data
             from datetime import datetime
+
             today = datetime.utcnow().strftime("%Y-%m-%d")
             log_file = Path.home() / ".agent_validator" / "logs" / f"{today}.jsonl"
 
@@ -843,11 +915,15 @@ print("✅ Validation with sensitive data successful")
 
                             # Check that redaction markers are present
                             if "[REDACTED]" not in output_sample:
-                                raise SmokeTestError("No redaction markers found in log")
+                                raise SmokeTestError(
+                                    "No redaction markers found in log"
+                                )
 
                             # Check that the config field specifically is redacted
                             if "api_key=sk-1234567890abcdef" in output_sample:
-                                raise SmokeTestError("API key in config field not redacted")
+                                raise SmokeTestError(
+                                    "API key in config field not redacted"
+                                )
                             if "jwt=Bearer eyJ" in output_sample:
                                 raise SmokeTestError("JWT in config field not redacted")
 
@@ -871,7 +947,10 @@ print("✅ Validation with sensitive data successful")
         try:
             # Test retry logic directly with the retry function
             result = subprocess.run(
-                [str(self.python_path), "-c", """
+                [
+                    str(self.python_path),
+                    "-c",
+                    """
 import sys
 import time
 from agent_validator.retry import create_retry_function
@@ -927,10 +1006,11 @@ try:
 except Exception as e:
     print(f"Retry function failed: {e}")
     sys.exit(1)
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -951,7 +1031,10 @@ except Exception as e:
         try:
             # Test that CLI arguments override environment variables
             result = subprocess.run(
-                [str(self.python_path), "-c", """
+                [
+                    str(self.python_path),
+                    "-c",
+                    """
 import sys
 import os
 from agent_validator.config import get_config
@@ -967,10 +1050,11 @@ if config.timeout_s != 30:
     sys.exit(1)
 
 print("✅ Environment variable precedence working")
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -992,7 +1076,10 @@ print("✅ Environment variable precedence working")
         try:
             # Test validation with sensitive data that gets sent to cloud
             result = subprocess.run(
-                [str(self.python_path), "-c", f"""
+                [
+                    str(self.python_path),
+                    "-c",
+                    f"""
 import sys
 from agent_validator import validate, Schema, ValidationMode, Config
 
@@ -1022,10 +1109,11 @@ result = validate(
 )
 
 print("✅ Cloud validation with sensitive data successful")
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -1045,7 +1133,10 @@ print("✅ Cloud validation with sensitive data successful")
         try:
             # Test validation with cloud logging enabled but invalid endpoint
             result = subprocess.run(
-                [str(self.python_path), "-c", """
+                [
+                    str(self.python_path),
+                    "-c",
+                    """
 import sys
 from agent_validator import validate, Schema, ValidationMode, Config
 
@@ -1080,10 +1171,11 @@ if result["name"] != "John":
     sys.exit(1)
 
 print("✅ Cloud failsafe working - validation succeeded despite cloud error")
-"""],
+""",
+                ],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -1121,7 +1213,9 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
 
             # Check if backend is not available
             if self._string_in_output(output, "Failed to communicate with API"):
-                print("⚠️  Webhook functionality not available (backend may not be running)")
+                print(
+                    "⚠️  Webhook functionality not available (backend may not be running)"
+                )
                 return
 
             # Status should work even if no webhook exists
@@ -1132,7 +1226,9 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
             output = self._run_cli_command(["webhook", "--generate"])
 
             # Check that webhook secret was generated and auto-configured
-            if not self._string_in_output(output, "Webhook secret generated successfully"):
+            if not self._string_in_output(
+                output, "Webhook secret generated successfully"
+            ):
                 raise SmokeTestError("Webhook generation output unexpected")
 
             if not self._string_in_output(output, "automatically configured"):
@@ -1152,14 +1248,18 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
             output = self._run_cli_command(["webhook", "--status"])
 
             if not self._string_in_output(output, "Webhook secret is configured"):
-                raise SmokeTestError("Webhook status does not show secret is configured")
+                raise SmokeTestError(
+                    "Webhook status does not show secret is configured"
+                )
 
             print("✅ Webhook status correctly shows secret exists")
 
             # Test webhook revocation
             output = self._run_cli_command(["webhook", "--revoke"])
 
-            if not self._string_in_output(output, "Webhook secret revoked successfully"):
+            if not self._string_in_output(
+                output, "Webhook secret revoked successfully"
+            ):
                 raise SmokeTestError("Webhook revocation output unexpected")
 
             print("✅ Webhook secret revoked successfully")
@@ -1168,16 +1268,22 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
             output = self._run_cli_command(["webhook", "--status"])
 
             if not self._string_in_output(output, "No webhook secret configured"):
-                raise SmokeTestError("Webhook status still shows secret after revocation")
+                raise SmokeTestError(
+                    "Webhook status still shows secret after revocation"
+                )
 
             print("✅ Webhook status correctly shows no secret after revocation")
 
         except SmokeTestError as e:
-            if (self._string_in_output(str(e), "Cannot connect") or
-                self._string_in_output(str(e), "Failed to fetch") or
-                self._string_in_output(str(e), "timed out") or
-                self._string_in_output(str(e), "Failed to communicate with API")):
-                print("⚠️  Webhook functionality not available (backend may not be running)")
+            if (
+                self._string_in_output(str(e), "Cannot connect")
+                or self._string_in_output(str(e), "Failed to fetch")
+                or self._string_in_output(str(e), "timed out")
+                or self._string_in_output(str(e), "Failed to communicate with API")
+            ):
+                print(
+                    "⚠️  Webhook functionality not available (backend may not be running)"
+                )
             else:
                 raise e
         except Exception as e:
@@ -1198,17 +1304,25 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
             output = self._run_cli_command(["cloud-logs", "-n", "5"])
 
             if self._string_in_output(output, "Cannot connect to"):
-                raise SmokeTestError("Cannot connect to backend server " + self.backend_url)
+                raise SmokeTestError(
+                    "Cannot connect to backend server " + self.backend_url
+                )
 
             # Should show table format or "No logs found"
-            if not self._string_in_output(output, "No logs found") and not self._string_in_output(output, "Timestamp"):
+            if not self._string_in_output(
+                output, "No logs found"
+            ) and not self._string_in_output(output, "Timestamp"):
                 raise SmokeTestError("Cloud logs output unexpected")
 
             print("✅ Cloud functionality working")
 
         except SmokeTestError as e:
-            if self._string_in_output(str(e), "Cannot connect") or self._string_in_output(str(e), "Failed to fetch"):
-                print("⚠️  Cloud functionality not available (backend may not be running)")
+            if self._string_in_output(
+                str(e), "Cannot connect"
+            ) or self._string_in_output(str(e), "Failed to fetch"):
+                print(
+                    "⚠️  Cloud functionality not available (backend may not be running)"
+                )
             else:
                 raise e
 
@@ -1267,7 +1381,9 @@ print("✅ Cloud failsafe working - validation succeeded despite cloud error")
 
             print("=" * SMOKE_TEST_OUTPUT_LINES)
             print("🎉 All smoke tests passed!")
-            print("🔒 Tests ran in isolated environment - no pollution to your dev environment")
+            print(
+                "🔒 Tests ran in isolated environment - no pollution to your dev environment"
+            )
 
         except SmokeTestError as e:
             print("=" * SMOKE_TEST_OUTPUT_LINES)
@@ -1289,7 +1405,7 @@ def main():
     parser.add_argument(
         "--backend-url",
         help="Backend URL for cloud testing (e.g., http://localhost:9090)",
-        default="http://localhost:9090"
+        default="http://localhost:9090",
     )
 
     args = parser.parse_args()
@@ -1304,5 +1420,5 @@ def main():
     tester.run_all_tests()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

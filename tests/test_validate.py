@@ -43,21 +43,9 @@ def test_coerce_mode():
 
 def test_nested_schema():
     """Test validation with nested schemas."""
-    schema = Schema({
-        "user": {
-            "name": str,
-            "age": int
-        },
-        "tags": [str]
-    })
+    schema = Schema({"user": {"name": str, "age": int}, "tags": [str]})
 
-    data = {
-        "user": {
-            "name": "John",
-            "age": 30
-        },
-        "tags": ["developer", "python"]
-    }
+    data = {"user": {"name": "John", "age": 30}, "tags": ["developer", "python"]}
 
     result = validate(data, schema)
     assert result == data
@@ -65,11 +53,7 @@ def test_nested_schema():
 
 def test_optional_fields():
     """Test validation with optional fields."""
-    schema = Schema({
-        "name": str,
-        "age": None,  # Optional field
-        "email": str
-    })
+    schema = Schema({"name": str, "age": None, "email": str})  # Optional field
 
     # With optional field
     data1 = {"name": "John", "age": 30, "email": "john@example.com"}
@@ -84,15 +68,9 @@ def test_optional_fields():
 
 def test_list_validation():
     """Test validation of list fields."""
-    schema = Schema({
-        "numbers": [int],
-        "strings": [str]
-    })
+    schema = Schema({"numbers": [int], "strings": [str]})
 
-    data = {
-        "numbers": [1, 2, 3],
-        "strings": ["a", "b", "c"]
-    }
+    data = {"numbers": [1, 2, 3], "strings": ["a", "b", "c"]}
 
     result = validate(data, schema)
     assert result == data
@@ -100,15 +78,9 @@ def test_list_validation():
 
 def test_list_coercion():
     """Test coercion of list elements."""
-    schema = Schema({
-        "numbers": [int],
-        "booleans": [bool]
-    })
+    schema = Schema({"numbers": [int], "booleans": [bool]})
 
-    data = {
-        "numbers": ["1", "2", "3"],
-        "booleans": ["true", "false", "1"]
-    }
+    data = {"numbers": ["1", "2", "3"], "booleans": ["true", "false", "1"]}
 
     result = validate(data, schema, mode=ValidationMode.COERCE)
     assert result["numbers"] == [1, 2, 3]
@@ -162,11 +134,7 @@ def test_retry_function():
         return json.dumps({"name": "John", "age": 30})  # Second attempt succeeds
 
     result = validate(
-        "invalid json",
-        schema,
-        retry_fn=retry_fn,
-        retries=2,
-        mode=ValidationMode.STRICT
+        "invalid json", schema, retry_fn=retry_fn, retries=2, mode=ValidationMode.STRICT
     )
 
     assert result == {"name": "John", "age": 30}

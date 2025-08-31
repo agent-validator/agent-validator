@@ -12,7 +12,7 @@ def test_license_key_redaction():
     data = {
         "config": {
             "license_key": "license-1234567890abcdef1234567890abcdef12345678",
-            "other": "value"
+            "other": "value",
         }
     }
 
@@ -37,12 +37,7 @@ def test_jwt_redaction():
 
 def test_email_redaction():
     """Test redaction of email addresses."""
-    data = {
-        "user": {
-            "email": "john.doe@example.com",
-            "name": "John Doe"
-        }
-    }
+    data = {"user": {"email": "john.doe@example.com", "name": "John Doe"}}
 
     redacted = redact_sensitive_data(data)
 
@@ -53,12 +48,7 @@ def test_email_redaction():
 
 def test_phone_redaction():
     """Test redaction of phone numbers."""
-    data = {
-        "contact": {
-            "phone": "+1-555-123-4567",
-            "name": "John Doe"
-        }
-    }
+    data = {"contact": {"phone": "+1-555-123-4567", "name": "John Doe"}}
 
     redacted = redact_sensitive_data(data)
 
@@ -69,12 +59,7 @@ def test_phone_redaction():
 
 def test_ssn_redaction():
     """Test redaction of social security numbers."""
-    data = {
-        "user": {
-            "ssn": "123-45-6789",
-            "name": "John Doe"
-        }
-    }
+    data = {"user": {"ssn": "123-45-6789", "name": "John Doe"}}
 
     redacted = redact_sensitive_data(data)
 
@@ -85,12 +70,7 @@ def test_ssn_redaction():
 
 def test_credit_card_redaction():
     """Test redaction of credit card numbers."""
-    data = {
-        "payment": {
-            "card_number": "1234-5678-9012-3456",
-            "name": "John Doe"
-        }
-    }
+    data = {"payment": {"card_number": "1234-5678-9012-3456", "name": "John Doe"}}
 
     redacted = redact_sensitive_data(data)
 
@@ -101,12 +81,7 @@ def test_credit_card_redaction():
 
 def test_password_redaction():
     """Test redaction of passwords."""
-    data = {
-        "credentials": {
-            "password": "secretpassword123",
-            "username": "john_doe"
-        }
-    }
+    data = {"credentials": {"password": "secretpassword123", "username": "john_doe"}}
 
     redacted = redact_sensitive_data(data)
 
@@ -121,12 +96,9 @@ def test_nested_structure_redaction():
         "users": [
             {
                 "email": "alice@example.com",
-                "license_key": "license-alice1234567890abcdef"
+                "license_key": "license-alice1234567890abcdef",
             },
-            {
-                "email": "bob@example.com",
-                "license_key": "license-bob1234567890abcdef"
-            }
+            {"email": "bob@example.com", "license_key": "license-bob1234567890abcdef"},
         ]
     }
 
@@ -154,9 +126,7 @@ def test_custom_redaction_pattern():
     # Add custom pattern for custom tokens
     add_redaction_pattern("custom_token", r"custom-[a-zA-Z0-9]{20,}")
 
-    data = {
-        "token": "custom-abcdefghijklmnopqrstuvwxyz123456"
-    }
+    data = {"token": "custom-abcdefghijklmnopqrstuvwxyz123456"}
 
     redacted = redact_sensitive_data(data)
 
@@ -165,15 +135,11 @@ def test_custom_redaction_pattern():
 
 def test_redactor_with_custom_patterns():
     """Test Redactor with custom patterns."""
-    custom_patterns = {
-        "custom_id": r"id-[a-zA-Z0-9]{10,}"
-    }
+    custom_patterns = {"custom_id": r"id-[a-zA-Z0-9]{10,}"}
 
     redactor = Redactor(custom_patterns)
 
-    data = {
-        "user_id": "id-1234567890abcdef"
-    }
+    data = {"user_id": "id-1234567890abcdef"}
 
     redacted = redactor.redact_dict(data)
 
@@ -193,9 +159,7 @@ def test_max_depth_redaction():
                                 "level7": {
                                     "level8": {
                                         "level9": {
-                                            "level10": {
-                                                "level11": {"secret": "value"}
-                                            }
+                                            "level10": {"level11": {"secret": "value"}}
                                         }
                                     }
                                 }
@@ -217,11 +181,7 @@ def test_max_depth_redaction():
 
 def test_no_sensitive_data():
     """Test redaction when no sensitive data is present."""
-    data = {
-        "name": "John Doe",
-        "age": 30,
-        "city": "New York"
-    }
+    data = {"name": "John Doe", "age": 30, "city": "New York"}
 
     redacted = redact_sensitive_data(data)
 
@@ -236,7 +196,7 @@ def test_mixed_data_types():
         "number": 42,
         "boolean": True,
         "list": ["alice@example.com", "bob@example.com"],
-        "dict": {"email": "charlie@example.com"}
+        "dict": {"email": "charlie@example.com"},
     }
 
     redacted = redact_sensitive_data(data)

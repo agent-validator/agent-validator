@@ -53,7 +53,9 @@ def get_config() -> Config:
     # Override with environment variables
     if "AGENT_VALIDATOR_MAX_OUTPUT_BYTES" in os.environ:
         try:
-            config.max_output_bytes = int(os.environ["AGENT_VALIDATOR_MAX_OUTPUT_BYTES"])
+            config.max_output_bytes = int(
+                os.environ["AGENT_VALIDATOR_MAX_OUTPUT_BYTES"]
+            )
         except ValueError:
             pass
 
@@ -76,7 +78,11 @@ def get_config() -> Config:
             pass
 
     if "AGENT_VALIDATOR_LOG_TO_CLOUD" in os.environ:
-        config.log_to_cloud = os.environ["AGENT_VALIDATOR_LOG_TO_CLOUD"].lower() in ("1", "true", "yes")
+        config.log_to_cloud = os.environ["AGENT_VALIDATOR_LOG_TO_CLOUD"].lower() in (
+            "1",
+            "true",
+            "yes",
+        )
 
     if "AGENT_VALIDATOR_ENDPOINT" in os.environ:
         config.cloud_endpoint = os.environ["AGENT_VALIDATOR_ENDPOINT"]

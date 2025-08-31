@@ -81,12 +81,20 @@ def validate(
 
     # Check if we need to retry due to JSON parsing failure
     json_parse_failed = False
-    if isinstance(original_input, str) and isinstance(agent_output, dict) and "raw_output" in agent_output:
+    if (
+        isinstance(original_input, str)
+        and isinstance(agent_output, dict)
+        and "raw_output" in agent_output
+    ):
         json_parse_failed = True
 
     # Check if we need to retry due to JSON parsing failure
     json_parse_failed = False
-    if isinstance(original_input, str) and isinstance(agent_output, dict) and "raw_output" in agent_output:
+    if (
+        isinstance(original_input, str)
+        and isinstance(agent_output, dict)
+        and "raw_output" in agent_output
+    ):
         json_parse_failed = True
 
     # Initialize retry variables
@@ -326,7 +334,9 @@ def _validate_against_schema(
                 element_type = expected_type[0]
                 if isinstance(element_type, type):
                     result[key] = [
-                        _validate_type(item, element_type, mode, f"{path}.{key}[{i}]", config)
+                        _validate_type(
+                            item, element_type, mode, f"{path}.{key}[{i}]", config
+                        )
                         for i, item in enumerate(value)
                     ]
                 elif isinstance(element_type, dict):
@@ -344,7 +354,11 @@ def _validate_against_schema(
 
 
 def _validate_type(
-    value: Any, expected_type: type, mode: ValidationMode, path: str, config: Optional[Config] = None
+    value: Any,
+    expected_type: type,
+    mode: ValidationMode,
+    path: str,
+    config: Optional[Config] = None,
 ) -> Any:
     """Validate and optionally coerce a value to the expected type."""
 

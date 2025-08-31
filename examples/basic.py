@@ -14,22 +14,19 @@ def call_agent(prompt: str, context: dict) -> str:
         return "This is not valid JSON"
 
     # Return valid JSON
-    return json.dumps({
-        "name": "John Doe",
-        "age": 30,
-        "email": "john@example.com",
-        "tags": ["developer", "python"]
-    })
+    return json.dumps(
+        {
+            "name": "John Doe",
+            "age": 30,
+            "email": "john@example.com",
+            "tags": ["developer", "python"],
+        }
+    )
 
 
 def main():
     # Define schema
-    schema = Schema({
-        "name": str,
-        "age": int,
-        "email": str,
-        "tags": [str]
-    })
+    schema = Schema({"name": str, "age": int, "email": str, "tags": [str]})
 
     # Mock agent output (could be malformed)
     agent_output = call_agent("Generate user profile", {"task_id": "123"})
@@ -44,7 +41,7 @@ def main():
             retry_fn=call_agent,
             retries=2,
             mode=ValidationMode.COERCE,
-            context={"task_id": "123"}
+            context={"task_id": "123"},
         )
 
         print("✓ Validation successful!")

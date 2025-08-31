@@ -51,7 +51,7 @@ def retry_with_backoff(
                 break
 
             # Calculate delay with exponential backoff and jitter
-            delay = min(base_delay * (factor ** attempt), max_delay)
+            delay = min(base_delay * (factor**attempt), max_delay)
             jitter = random.uniform(0, delay * 0.1)  # 10% jitter
             total_delay = delay + jitter
 
@@ -86,6 +86,7 @@ def create_retry_function(
     Returns:
         Wrapped function with retry logic
     """
+
     def retry_wrapper(prompt: str, context: dict) -> Any:
         def attempt():
             return original_fn(prompt, context)

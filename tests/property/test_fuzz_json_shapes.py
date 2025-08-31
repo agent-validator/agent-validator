@@ -20,9 +20,9 @@ def generate_random_schema(depth: int = 0, max_depth: int = 3) -> dict[str, Any]
 
     for i in range(num_fields):
         field_name = f"field_{i}"
-        field_type = random.choice([
-            str, int, float, bool, list, dict, None  # None for optional
-        ])
+        field_type = random.choice(
+            [str, int, float, bool, list, dict, None]  # None for optional
+        )
 
         if field_type is list:
             # List with random element type
@@ -39,7 +39,9 @@ def generate_random_schema(depth: int = 0, max_depth: int = 3) -> dict[str, Any]
     return schema
 
 
-def generate_data_for_schema(schema: dict[str, Any], depth: int = 0, max_depth: int = 3) -> dict[str, Any]:
+def generate_data_for_schema(
+    schema: dict[str, Any], depth: int = 0, max_depth: int = 3
+) -> dict[str, Any]:
     """Generate data that matches a schema."""
     if depth >= max_depth:
         return {"value": "test"}
@@ -71,21 +73,34 @@ def generate_data_for_schema(schema: dict[str, Any], depth: int = 0, max_depth: 
             else:
                 # List of primitives
                 if element_type is str:
-                    data[field_name] = [f"item_{i}" for i in range(random.randint(1, 3))]
+                    data[field_name] = [
+                        f"item_{i}" for i in range(random.randint(1, 3))
+                    ]
                 elif element_type is int:
-                    data[field_name] = [random.randint(1, 100) for _ in range(random.randint(1, 3))]
+                    data[field_name] = [
+                        random.randint(1, 100) for _ in range(random.randint(1, 3))
+                    ]
                 elif element_type is float:
-                    data[field_name] = [random.uniform(0, 100) for _ in range(random.randint(1, 3))]
+                    data[field_name] = [
+                        random.uniform(0, 100) for _ in range(random.randint(1, 3))
+                    ]
                 elif element_type is bool:
-                    data[field_name] = [random.choice([True, False]) for _ in range(random.randint(1, 3))]
+                    data[field_name] = [
+                        random.choice([True, False])
+                        for _ in range(random.randint(1, 3))
+                    ]
         elif isinstance(field_type, dict):
             # Nested object
-            data[field_name] = generate_data_for_schema(field_type, depth + 1, max_depth)
+            data[field_name] = generate_data_for_schema(
+                field_type, depth + 1, max_depth
+            )
 
     return data
 
 
-def generate_invalid_data_for_schema(schema: dict[str, Any], depth: int = 0, max_depth: int = 3) -> dict[str, Any]:
+def generate_invalid_data_for_schema(
+    schema: dict[str, Any], depth: int = 0, max_depth: int = 3
+) -> dict[str, Any]:
     """Generate data that doesn't match a schema."""
     if depth >= max_depth:
         return {"value": 123}  # Wrong type
@@ -175,11 +190,15 @@ def test_coercion_mode_accepts_coercible_data(max_depth):
         elif isinstance(field_type, list):
             element_type = field_type[0]
             if element_type is int:
-                coercible_data[field_name] = [str(random.randint(1, 100)) for _ in range(3)]
+                coercible_data[field_name] = [
+                    str(random.randint(1, 100)) for _ in range(3)
+                ]
             elif element_type is str:
                 coercible_data[field_name] = [f"item_{i}" for i in range(3)]
         elif isinstance(field_type, dict):
-            coercible_data[field_name] = generate_data_for_schema(field_type, max_depth=max_depth)
+            coercible_data[field_name] = generate_data_for_schema(
+                field_type, max_depth=max_depth
+            )
 
     # Should validate successfully with coercion
     result = validate(coercible_data, schema, mode=ValidationMode.COERCE)
@@ -239,23 +258,12 @@ def test_size_limits_enforced():
 
 def test_nested_list_validation():
     """Test validation of nested lists."""
-    schema = Schema({
-        "users": [{
-            "name": str,
-            "scores": [int]
-        }]
-    })
+    schema = Schema({"users": [{"name": str, "scores": [int]}]})
 
     valid_data = {
         "users": [
-            {
-                "name": "Alice",
-                "scores": [85, 92, 78]
-            },
-            {
-                "name": "Bob",
-                "scores": [91, 87, 95]
-            }
+            {"name": "Alice", "scores": [85, 92, 78]},
+            {"name": "Bob", "scores": [91, 87, 95]},
         ]
     }
 
@@ -265,11 +273,7 @@ def test_nested_list_validation():
 
 def test_optional_fields_handling():
     """Test handling of optional fields."""
-    schema = Schema({
-        "name": str,
-        "age": None,  # Optional
-        "email": str
-    })
+    schema = Schema({"name": str, "age": None, "email": str})  # Optional
 
     # With optional field
     data1 = {"name": "John", "age": 30, "email": "john@example.com"}
