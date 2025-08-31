@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-import tomllib  # type: ignore
+import tomllib
 
 from .typing_ import Config
 
